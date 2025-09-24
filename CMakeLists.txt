@@ -7,7 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
-include(CTest)
+option(BUILD_TESTS "Build tests" ON)
+
+if(BUILD_TESTS)
+    find_package(GTest REQUIRED)
+    include(GoogleTest)
+    enable_testing()
+endif()
 
 include(cmake/warnings.cmake)
 
@@ -26,6 +32,7 @@ target_sources(ka_${module_name}
         include/ka/common/fixed.hpp
         include/ka/common/hash.hpp
         include/ka/common/log.hpp
+        include/ka/common/range_set.hpp
 
     PRIVATE
         src/log.cpp
@@ -46,3 +53,17 @@ install(TARGETS ka_${module_name}
     RUNTIME DESTINATION bin
     FILE_SET HEADERS DESTINATION include
 )
+
+if(BUILD_TESTS)
+    add_executable(ka_${module_name}_test
+        test/range_set_test.cpp
+    )
+    target_enable_warnings(ka_${module_name}_test)
+    target_link_libraries(ka_${module_name}_test
+        PRIVATE
+            ka::common
+            gtest::gtest
+    )
+
+    gtest_discover_tests(ka_${module_name}_test)
+endif()
