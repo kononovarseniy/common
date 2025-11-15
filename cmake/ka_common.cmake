@@ -44,6 +44,10 @@ function(ka_target current_target_var target_type)
         target_enable_warnings(${target_name})
     endif()
 
+    # Add FILE_SET HEADERS explicitly before install command.
+    # Without this, header files are not installed on some environments (GitHub Linux Runners).
+    target_sources(${target_name} PUBLIC FILE_SET HEADERS BASE_DIRS include)
+
     install(TARGETS ${target_name}
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
