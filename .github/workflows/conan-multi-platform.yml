@@ -87,9 +87,7 @@ jobs:
       - name: Create conan profile
         run: |
           mkdir -p ${{ env.CONAN_HOME }}/profiles
-          cat > ${{ env.CONAN_HOME }}/profiles/default << 'EOF'
-          ${{ matrix.conf.conan-profile }}
-          EOF
+          echo '${{ matrix.conf.conan-profile }}' > ${{ env.CONAN_HOME }}/profiles/default
 
       - name: Restore conan cache
         id: restore-conan-cache
