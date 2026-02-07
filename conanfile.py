@@ -37,6 +37,7 @@ class KaCommonRecipe(ConanFile):
         copy(self, "cmake/*", self.recipe_folder, self.export_sources_folder)
         copy(self, "include/*", self.recipe_folder, self.export_sources_folder)
         copy(self, "src/*", self.recipe_folder, self.export_sources_folder)
+        copy(self, "test/*", self.recipe_folder, self.export_sources_folder)
 
     def validate(self):
         check_min_cppstd(self, "20")

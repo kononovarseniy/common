@@ -30,3 +30,15 @@ target_link_libraries(${current_target}
     PRIVATE
         fmt::fmt
 )
+
+if(BUILD_TESTING)
+    ka_gtest_target(${current_target}_test
+        SOURCES
+            test/test_hash.cpp
+    )
+
+    target_link_libraries(${current_target}_test
+        PRIVATE
+            ka::common
+    )
+endif()

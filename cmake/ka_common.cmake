@@ -1,7 +1,13 @@
-# Set default value for BUILD_TESTING when neither CTest nor Conan has defined it.
+include(CTest)
 # Conan sets BUILD_TESTING=OFF when `tools.build:skip_test` is True.
 # CTest normally defines this when using `include(CTest)`.
-option(BUILD_TESTING "Build tests" ON)
+option(BUILD_TESTS "Build tests" ON)
+
+if(BUILD_TESTS)
+    find_package(GTest CONFIG REQUIRED)
+    include(GoogleTest)
+    enable_testing()
+endif()
 
 function(target_enable_warnings TARGET_NAME)
     target_compile_options(${TARGET_NAME} PRIVATE
