@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -63,14 +64,8 @@ struct Hash final
     }
 };
 
-template <typename T>
-struct HashImpl final
-{
-    static void update(Hasher & hasher, const T & value) noexcept;
-};
-
-template <>
-struct HashImpl<std::string_view> final
+template <std::convertible_to<std::string_view> T>
+struct HashImpl<T> final
 {
     static void update(Hasher & hasher, const std::string_view value) noexcept
     {
@@ -101,33 +96,22 @@ struct StrHash final
 {
     using is_transparent = void;
 
-    [[nodiscard]] u64 operator()(const std::string_view value) const noexcept
+    template <std::convertible_to<std::string_view> T>
+    [[nodiscard]] u64 operator()(const T & value) const noexcept(noexcept(std::string_view { value }))
     {
-        return Hash {}(value);
-    }
-
-    [[nodiscard]] u64 operator()(const std::string & value) const noexcept
-    {
-        return Hash {}(std::string_view(value));
-    }
-
-    [[nodiscard]] u64 operator()(const char * const value) const noexcept
-    {
-        return Hash {}(std::string_view(value));
+        return Hash {}(std::string_view { value });
     }
 };
-
-template <typename T>
-concept HashableStr = requires(T && value) { StrHash {}(std::forward<T>(value)); };
 
 struct StrEq final
 {
     using is_transparent = void;
 
-    template <HashableStr A, HashableStr B>
-    [[nodiscard]] constexpr auto operator()(A && a, B && b) noexcept(noexcept(std::forward<A>(a) == std::forward<B>(b)))
+    template <std::convertible_to<std::string_view> A, std::convertible_to<std::string_view> B>
+    [[nodiscard]] constexpr auto operator()(A && a, B && b) const
+        noexcept(noexcept(std::string_view { std::forward<A>(a) } == std::string_view { std::forward<B>(b) }))
     {
-        return std::forward<A>(a) == std::forward<B>(b);
+        return std::string_view { std::forward<A>(a) } == std::string_view { std::forward<B>(b) };
     }
 };
 
