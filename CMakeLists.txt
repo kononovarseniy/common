@@ -34,6 +34,7 @@ target_link_libraries(${current_target}
 if(BUILD_TESTING)
     ka_gtest_target(${current_target}_test
         SOURCES
+            test/test_cast.cpp
             test/test_hash.cpp
     )
 

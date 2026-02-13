@@ -17,8 +17,9 @@ using s16 = std::int16_t;
 using s32 = std::int32_t;
 using s64 = std::int64_t;
 
+/// @brief Concept for IEEE 754 binary floating-point types.
 template <typename T>
-concept ieee_float = std::floating_point<T> && std::numeric_limits<T>::is_iec559;
+concept ieee_float = std::floating_point<T> && std::numeric_limits<T>::is_iec559 && std::numeric_limits<T>::radix == 2;
 
 using f32 = float;
 using f64 = double;
