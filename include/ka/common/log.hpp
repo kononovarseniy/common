@@ -54,6 +54,7 @@ inline void log_fatal(
 void log_assert(
     std::string_view assert_type,
     std::string_view condition,
+    bool exception,
     const std::source_location & location = std::source_location::current());
 
 } // namespace ka

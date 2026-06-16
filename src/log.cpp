@@ -38,9 +38,17 @@ std::string format_message(
 void log_assert(
     const std::string_view assert_type,
     const std::string_view condition,
+    const bool exception,
     const std::source_location & location)
 {
-    log_fatal(fmt::format("{} failed: AR_ASSERT({})", assert_type, condition), location);
+    if (exception)
+    {
+        log_fatal(fmt::format("{} failed with exception: ({})", assert_type, condition), location);
+    }
+    else
+    {
+        log_fatal(fmt::format("{} failed: ({})", assert_type, condition), location);
+    }
 }
 
 } // namespace ka

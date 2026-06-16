@@ -220,8 +220,8 @@ template <typename Target, typename Source>
     const Source source,
     const std::source_location & location = std::source_location::current())
 {
-    AR_NESTED_ASSERT(exactly_castable_to<Target>(source), "exact_cast", location);
-    AR_POST(static_cast<Source>(static_cast<Target>(source)) == source);
+    KA_NESTED_ASSERT("exact_cast", location, exactly_castable_to<Target>(source));
+    KA_POST(static_cast<Source>(static_cast<Target>(source)) == source);
     return static_cast<Target>(source);
 }
 
