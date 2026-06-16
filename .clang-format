@@ -7,13 +7,13 @@ Standard: c++20
 IndentWidth: 4
 ContinuationIndentWidth: 4
 
-IndentAccessModifiers: False
+IndentAccessModifiers: false
 AccessModifierOffset: -4
-IndentCaseLabels: False
+IndentCaseLabels: false
 IndentExternBlock: NoIndent
-IndentGotoLabels: False
+IndentGotoLabels: false
 IndentPPDirectives: BeforeHash
-IndentWrappedFunctionNames: False
+IndentWrappedFunctionNames: false
 LambdaBodyIndentation: Signature
 NamespaceIndentation: None
 PenaltyReturnTypeOnItsOwnLine: 100000
@@ -27,27 +27,35 @@ AlwaysBreakTemplateDeclarations: Yes
 SeparateDefinitionBlocks: Always
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
-KeepEmptyLinesAtTheStartOfBlocks: False
+KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 1
 
 IncludeBlocks: Regroup
 IncludeCategories:
   # gtest includes
-  - Regex: '<gtest/.+>'
+  - Regex: "<gtest/.+>"
     Priority: 0
     SortPriority: 1
-  - Regex: '<gmock/.+>'
+  - Regex: "<gmock/.+>"
     Priority: 0
     SortPriority: 2
+  # CLI11 includes
+  - Regex: "<CLI/.+>"
+    Priority: 0
+    SortPriority: 3
   # Graphics API includes
+  - Regex: "<volk.h>"
+    Priority: 1
+    SortPriority: 1
+    CaseSensitive: true
   - Regex: "<vulkan/.+>"
     Priority: 1
-    SortPriority: 1
-    CaseSensitive: True
+    SortPriority: 2
+    CaseSensitive: true
   - Regex: "<GLFW/glfw3.h>"
     Priority: 1
-    SortPriority: 2
-    CaseSensitive: True
+    SortPriority: 3
+    CaseSensitive: true
   # mpfr includes
   - Regex: '<mpfr\.h>'
     Priority: 8
@@ -55,17 +63,14 @@ IncludeCategories:
   - Regex: '<pugixml\.hpp>'
     Priority: 9
   # spirv_cross includes
-  - Regex: '<spirv_cross/.+>'
-    Priority: 10
+  - Regex: "<spirv_cross/.+>"
+    Priority: 11
   # stb_image includes
   - Regex: '<stb_image\.h>'
-    Priority: 11
+    Priority: 12
   # tiny_gltf includes
   - Regex: '<tiny_gltf\.h>'
-    Priority: 12
-  # stl includes
-  - Regex: "<[[:alnum:]_.]+>"
-    Priority: 3
+    Priority: 13
   # boost includes
   - Regex: "<boost/.+>"
     Priority: 4
@@ -78,20 +83,37 @@ IncludeCategories:
   # gsl includes
   - Regex: "<gsl/.+>"
     Priority: 7
+  # sqlite3 includes
+  - Regex: "<magic_enum/magic_enum.hpp>"
+    Priority: 8
+  # sqlite3 includes
+  - Regex: "<sqlite3.h>"
+    Priority: 9
+    SortPriority: 9
+  # SQLiteCpp includes
+  - Regex: "<SQLiteCpp/.+>"
+    Priority: 9
+    SortPriority: 10
+  # stl includes
+  - Regex: "<[[:alnum:]_.]+>"
+    Priority: 3
+  # Tracy
+  - Regex: "<tracy/.+>"
+    Priority: 101
   # Our includes
   - Regex: '<[[:alnum:]_/]+\.(hpp|pb.h)>'
     Priority: 100
-    CaseSensitive: True
+    CaseSensitive: true
   # Others
   - Regex: ".*"
     Priority: 1000
 
 # Arguments and parameters
 AlignAfterOpenBracket: AlwaysBreak
-BinPackArguments: False
+BinPackArguments: false
 BinPackParameters: OnePerLine
-AllowAllArgumentsOnNextLine: False
-AllowAllParametersOfDeclarationOnNextLine: False
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
 
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
@@ -102,24 +124,24 @@ AllowShortLambdasOnASingleLine: Empty
 AllowShortLoopsOnASingleLine: false
 
 BreakBeforeBraces: Allman
-BreakBeforeTernaryOperators: True
+BreakBeforeTernaryOperators: true
 BreakInheritanceList: BeforeComma
 
 PackConstructorInitializers: Never
 BreakConstructorInitializers: BeforeComma
 
-SpaceAfterTemplateKeyword: True
-SpaceBeforeAssignmentOperators: True
-SpaceBeforeCaseColon: False
-SpaceBeforeCpp11BracedList: True
-Cpp11BracedListStyle: False
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCpp11BracedList: true
+Cpp11BracedListStyle: false
 SpaceBeforeParens: ControlStatements
-SpaceBeforeRangeBasedForLoopColon: True
-SpaceBeforeSquareBrackets: False
-SpaceInEmptyBlock: False
-SpaceInEmptyParentheses: False
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
 
-FixNamespaceComments: True
+FixNamespaceComments: true
 ShortNamespaceLines: 0
 
 PointerAlignment: Middle
