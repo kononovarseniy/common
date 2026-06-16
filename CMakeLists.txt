@@ -2,10 +2,9 @@ cmake_minimum_required(VERSION 3.23)
 
 project(ka_common)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 include(cmake/ka_common.cmake)
+
+ka_require_cpp_standard(MIN 20 DEFAULT 23)
 
 ka_target(current_target LIBRARY NAME common)
 

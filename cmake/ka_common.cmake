@@ -13,6 +13,37 @@ if(BUILD_TESTS)
     enable_testing()
 endif()
 
+function(ka_require_cpp_standard)
+    set(options "")
+    set(oneValueArgs MIN DEFAULT)
+    set(multiValueArgs "")
+    cmake_parse_arguments(PARSE_ARGV 0 arg "${options}" "${oneValueArgs}" "${multiValueArgs}")
+
+    if(NOT arg_MIN)
+        message(FATAL_ERROR "ka_require_cpp_standard: Missing required argument MIN")
+    endif()
+    if(NOT arg_DEFAULT)
+        set(arg_DEFAULT ${arg_MIN})
+    endif()
+
+    # Allow to specify requiored standard by external tools such as conan.
+    if(NOT DEFINED CMAKE_CXX_STANDARD)
+        set(CMAKE_CXX_STANDARD ${arg_DEFAULT} PARENT_SCOPE)
+    endif()
+
+    if(CMAKE_CXX_STANDARD LESS arg_MIN)
+        message(FATAL_ERROR 
+            "Project requires at least C++${arg_MIN}. "
+            "Current configuration is C++${CMAKE_CXX_STANDARD}."
+        )
+    endif()
+
+    set(CMAKE_CXX_STANDARD_REQUIRED ON PARENT_SCOPE)
+    set(CMAKE_CXX_EXTENSIONS OFF PARENT_SCOPE)
+    
+    message(STATUS "C++ Standard configured: ${CMAKE_CXX_STANDARD} (Min: ${arg_MIN}, Default: ${arg_DEFAULT})")
+endfunction()
+
 function(target_enable_warnings TARGET_NAME)
     target_compile_options(${TARGET_NAME} PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
