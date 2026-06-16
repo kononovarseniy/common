@@ -52,6 +52,11 @@ function(ka_target current_target_var target_type)
         add_executable(${alias_name} ALIAS ${target_name})
 
         target_enable_warnings(${target_name})
+    else()
+        message(FATAL_ERROR 
+            "Unknown target type '${target_type}' for target '${target_name}'.\n"
+            "Supported types are: INTERFACE_LIBRARY, LIBRARY, EXECUTABLE"
+        )
     endif()
 
     # Add FILE_SET HEADERS explicitly before install command.
