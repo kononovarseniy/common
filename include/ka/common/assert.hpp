@@ -1,10 +1,14 @@
 #pragma once
 
+#include <utility>
+
 #include <ka/common/log.hpp>
 
-#if defined(__GNUC__) // GCC, Clang, ICC
+#if defined(__cpp_lib_unreachable) && (__cpp_lib_unreachable >= 202202L)
+    #define _KA_UNREACHABLE std::unreachable()
+#elif KA_COMPILER_IS_GCC || KA_COMPILER_IS_ANY_CLANG
     #define _KA_UNREACHABLE __builtin_unreachable()
-#elif defined(_MSC_VER) // MSVC
+#elif KA_COMPILER_IS_MSVC
     #define _KA_UNREACHABLE __assume(false)
 #endif
 
