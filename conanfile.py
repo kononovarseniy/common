@@ -6,7 +6,7 @@ from conan.tools.files import copy
 
 class KaCommonRecipe(ConanFile):
     name = "ka_common"
-    version = "0.1.0"
+    version = "0.2.0"
     package_type = "library"
 
     license = "MIT"
@@ -28,7 +28,7 @@ class KaCommonRecipe(ConanFile):
 
     def requirements(self):
         self.requires("fmt/[>=9.1.0]")
-        
+
     def build_requirements(self):
         self.test_requires("gtest/[>=1.17.0 <2]")
 
@@ -61,7 +61,7 @@ class KaCommonRecipe(ConanFile):
     def package(self):
         cmake = CMake(self)
         cmake.install()
-  
+
         copy(self, "cmake/*", src=self.source_folder, dst=self.package_folder)
 
     def package_info(self):
