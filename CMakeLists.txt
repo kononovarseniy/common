@@ -18,6 +18,7 @@ target_sources(${current_target}
         include/ka/common/fixed.hpp
         include/ka/common/hash.hpp
         include/ka/common/log.hpp
+        include/ka/common/pragma.hpp
 
     PRIVATE
         src/log.cpp
