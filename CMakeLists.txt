@@ -17,6 +17,8 @@ target_sources(${current_target}
         include/ka/common/cast.hpp
         include/ka/common/fixed.hpp
         include/ka/common/hash.hpp
+        include/ka/common/interval_set.hpp
+        include/ka/common/interval_traits.hpp
         include/ka/common/interval.hpp
         include/ka/common/log.hpp
         include/ka/common/pragma.hpp
@@ -35,9 +37,12 @@ target_link_libraries(${current_target}
 if(BUILD_TESTING)
     ka_gtest_target(${current_target}_test
         SOURCES
+            test/helpers/interval.hpp
             test/test_assert.cpp
             test/test_cast.cpp
             test/test_hash.cpp
+            test/test_interval_set.cpp
+            test/test_interval_traits.cpp
             test/test_interval.cpp
     )
 
