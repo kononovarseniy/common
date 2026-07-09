@@ -20,15 +20,163 @@ struct IntervalTraits final
 {
 };
 
+template <typename Traits, typename T>
+concept HasIntervalValueLessFor = requires(const T & value) {
+    { Traits::less(value, value) } noexcept -> std::convertible_to<bool>;
+};
+
+template <typename Traits, typename T>
+concept HasIntervalValueEqualFor = requires(const T & value) {
+    { Traits::equal(value, value) } noexcept -> std::convertible_to<bool>;
+};
+
+template <typename Traits, typename T>
+concept HasIntervalValueCmpFor = requires(const T & value) {
+    { Traits::cmp(value, value) } noexcept -> std::convertible_to<std::strong_ordering>;
+};
+
 /// @brief Concept of IntervalSet value traits.
 template <typename Traits, typename T>
-concept IntervalTraitsFor = requires(const T & value) {
-    { Traits::min() } noexcept -> std::same_as<T>;
-    { Traits::max() } noexcept -> std::same_as<T>;
-    { Traits::prev(value) } noexcept -> std::same_as<T>;
-    { Traits::next(value) } noexcept -> std::same_as<T>;
-    { Traits::less(value, value) } noexcept -> std::convertible_to<bool>;
-    { Traits::distance(value, value) } noexcept -> std::same_as<size_t>;
+concept IntervalTraitsFor =
+    (HasIntervalValueLessFor<Traits, T> || HasIntervalValueCmpFor<Traits, T>) && requires(const T & value) {
+        { Traits::min() } noexcept -> std::same_as<T>;
+        { Traits::max() } noexcept -> std::same_as<T>;
+        { Traits::prev(value) } noexcept -> std::same_as<T>;
+        { Traits::next(value) } noexcept -> std::same_as<T>;
+        { Traits::distance(value, value) } noexcept -> std::same_as<size_t>;
+    };
+
+/// @brief Compile time inderection layer for more convenient Traits usage.
+template <typename T, IntervalTraitsFor<T> Traits>
+struct IntervalUtils final
+{
+    /// @brief Smallest allowed value.
+    [[nodiscard]] static constexpr T min() noexcept
+    {
+        return Traits::min();
+    }
+
+    /// @brief Largest allowed value.
+    [[nodiscard]] static constexpr T max() noexcept
+    {
+        return Traits::max();
+    }
+
+    /// @brief Largest value strictly less then the value.
+    [[nodiscard]] static constexpr T prev(const T & value) noexcept
+    {
+        return Traits::prev(value);
+    }
+
+    /// @brief Smalest value strictly greater then the value.
+    [[nodiscard]] static constexpr T next(const T & value) noexcept
+    {
+        return Traits::next(value);
+    }
+
+    /// @brief Returns the number of increments (applications of next) needed to go from first to last.
+    /// @pre first <= last.
+    [[nodiscard]] static constexpr size_t distance(const T & first, const T & last) noexcept
+    {
+        KA_PRE(less_or_equal(first, last));
+        return Traits::distance(first, last);
+    }
+
+    /// @brief Checks if lhs < rhs acording to the Traits.
+    [[nodiscard]] static constexpr bool less(const T & lhs, const T & rhs) noexcept
+    {
+        if constexpr (HasIntervalValueLessFor<Traits, T>)
+        {
+            return Traits::less(lhs, rhs);
+        }
+        if constexpr (HasIntervalValueCmpFor<Traits, T>)
+        {
+            return Traits::cmp(lhs, rhs) < 0;
+        }
+    }
+
+    /// @brief Checks if lhs <= rhs acording to the Traits.
+    [[nodiscard]] static constexpr bool less_or_equal(const T & lhs, const T & rhs) noexcept
+    {
+        if constexpr (HasIntervalValueLessFor<Traits, T>)
+        {
+            return !Traits::less(rhs, lhs);
+        }
+        if constexpr (HasIntervalValueCmpFor<Traits, T>)
+        {
+            return Traits::cmp(lhs, rhs) <= 0;
+        }
+    }
+
+    /// @brief Returns true if elements are equal acording to the Traits.
+    [[nodiscard]] static constexpr bool equal(const T & lhs, const T & rhs) noexcept
+    {
+        if constexpr (HasIntervalValueEqualFor<Traits, T>)
+        {
+            return Traits::equal(lhs, rhs);
+        }
+        if constexpr (HasIntervalValueCmpFor<Traits, T>)
+        {
+            return Traits::cmp(lhs, rhs) == 0;
+        }
+        if constexpr (HasIntervalValueLessFor<Traits, T>)
+        {
+            return !Traits::less(lhs, rhs) && !Traits::less(rhs, lhs);
+        }
+    }
+
+    /// @brief Checks if lhs >= rhs acording to the Traits.
+    [[nodiscard]] static constexpr bool greater_or_equal(const T & lhs, const T & rhs) noexcept
+    {
+        if constexpr (HasIntervalValueLessFor<Traits, T>)
+        {
+            return !Traits::less(lhs, rhs);
+        }
+        if constexpr (HasIntervalValueCmpFor<Traits, T>)
+        {
+            return Traits::cmp(lhs, rhs) >= 0;
+        }
+    }
+
+    /// @brief Checks if lhs > rhs acording to the Traits.
+    [[nodiscard]] static constexpr bool greater(const T & lhs, const T & rhs) noexcept
+    {
+        if constexpr (HasIntervalValueLessFor<Traits, T>)
+        {
+            return Traits::less(rhs, lhs);
+        }
+        if constexpr (HasIntervalValueCmpFor<Traits, T>)
+        {
+            return Traits::cmp(lhs, rhs) == 0;
+        }
+    }
+
+    /// @brief Returns the three-way comparison result between lhs and rhs.
+    [[nodiscard]] static constexpr std::strong_ordering cmp(const T & lhs, const T & rhs) noexcept
+    {
+        if constexpr (HasIntervalValueCmpFor<Traits, T>)
+        {
+            return Traits::cmp(lhs, rhs);
+        }
+        if constexpr (HasIntervalValueLessFor<Traits, T>)
+        {
+            if (Traits::less(lhs, rhs))
+            {
+                return std::strong_ordering::less;
+            }
+            if (Traits::less(rhs, lhs))
+            {
+                return std::strong_ordering::greater;
+            }
+            return std::strong_ordering::equal;
+        }
+    }
+
+    /// @brief Returns true if the value is inside allowed range of values for given Traits.
+    [[nodiscard]] static constexpr bool value_inside_allowed_range(const T & value) noexcept
+    {
+        return !less(value, min()) && !less(max(), value);
+    }
 };
 
 template <typename T, IntervalTraitsFor<T> Traits>
@@ -43,6 +191,8 @@ class IntervalSetIntervalsIterator;
 template <typename T, IntervalTraitsFor<T> Traits = IntervalTraits<T>>
 class IntervalSet final
 {
+    using Utils = IntervalUtils<T, Traits>;
+
 public:
     /// @brief Constructs empty set.
     IntervalSet()
@@ -59,15 +209,15 @@ public:
     /// @brief Returns true if the set contains all possible values.
     [[nodiscard]] bool full() const noexcept
     {
-        return endpoints_.size() == 1 && equal(endpoints_.front(), Traits::min());
+        return endpoints_.size() == 1 && Utils::equal(endpoints_.front(), Utils::min());
     }
 
     /// @brief Returns true if the set contains given value.
     [[nodiscard]] bool contains(const T & value) const noexcept
     {
-        KA_PRE(value_inside_allowed_range(value));
+        KA_PRE(Utils::value_inside_allowed_range(value));
 
-        const auto it = std::ranges::upper_bound(endpoints_, value, Traits::less);
+        const auto it = std::ranges::upper_bound(endpoints_, value, Utils::less);
         return std::distance(endpoints_.begin(), it) % 2 == 1;
     }
 
@@ -86,9 +236,9 @@ public:
         KA_PRE(!empty());
         if (endpoints_.size() % 2 == 0)
         {
-            return Traits::prev(endpoints_.back());
+            return Utils::prev(endpoints_.back());
         }
-        return Traits::max();
+        return Utils::max();
     }
 
     using Iterator = IntervalSetElementsIterator<T, Traits>;
@@ -108,15 +258,15 @@ public:
     /// @brief Returns the size of the set.
     [[nodiscard]] auto size() const noexcept
     {
-        using ResultT = std::invoke_result_t<decltype(Traits::distance), const T &, const T &>;
+        using ResultT = std::invoke_result_t<decltype(Utils::distance), const T &, const T &>;
         ResultT result {};
         for (size_t i = 0; i + 1 < endpoints_.size(); i += 2)
         {
-            result += Traits::distance(endpoints_[i], endpoints_[i + 1]);
+            result += Utils::distance(endpoints_[i], endpoints_[i + 1]);
         }
         if (endpoints_.size() % 2 == 1)
         {
-            result += Traits::distance(endpoints_.back(), Traits::max());
+            result += Utils::distance(endpoints_.back(), Utils::max());
             ++result;
         }
         return result;
@@ -173,7 +323,7 @@ public:
         }
         for (size_t i = 0; i < endpoints_.size(); ++i)
         {
-            if (!equal(endpoints_[i], other.endpoints_[i]))
+            if (!Utils::equal(endpoints_[i], other.endpoints_[i]))
             {
                 return false;
             }
@@ -190,13 +340,13 @@ public:
     /// @brief Constructs a set containing all possible values.
     [[nodiscard]] static IntervalSet make_full()
     {
-        return IntervalSet { { Traits::min() } };
+        return IntervalSet { { Utils::min() } };
     }
 
     /// @brief Constructs a set containing all values greater or equal to the given one.
     [[nodiscard]] static IntervalSet make_greater_equal(const T & value)
     {
-        KA_PRE(value_inside_allowed_range(value));
+        KA_PRE(Utils::value_inside_allowed_range(value));
 
         return IntervalSet { { value } };
     }
@@ -204,11 +354,11 @@ public:
     /// @brief Constructs a set containing all values greater than the given one.
     [[nodiscard]] static IntervalSet make_greater(const T & value)
     {
-        KA_PRE(value_inside_allowed_range(value));
+        KA_PRE(Utils::value_inside_allowed_range(value));
 
-        if (Traits::less(value, Traits::max()))
+        if (Utils::less(value, Utils::max()))
         {
-            return IntervalSet { { Traits::next(value) } };
+            return IntervalSet { { Utils::next(value) } };
         }
         return make_empty();
     }
@@ -216,11 +366,11 @@ public:
     /// @brief Constructs a set containing single value.
     [[nodiscard]] static IntervalSet make_single_value(const T & value)
     {
-        KA_PRE(value_inside_allowed_range(value));
+        KA_PRE(Utils::value_inside_allowed_range(value));
 
-        if (Traits::less(value, Traits::max()))
+        if (Utils::less(value, Utils::max()))
         {
-            return IntervalSet { { value, Traits::next(value) } };
+            return IntervalSet { { value, Utils::next(value) } };
         }
         return make_greater_equal(value);
     }
@@ -228,11 +378,11 @@ public:
     /// @brief Constructs a set containing all values less or equal to the given one.
     [[nodiscard]] static IntervalSet make_less_equal(const T & value)
     {
-        KA_PRE(value_inside_allowed_range(value));
+        KA_PRE(Utils::value_inside_allowed_range(value));
 
-        if (Traits::less(value, Traits::max()))
+        if (Utils::less(value, Utils::max()))
         {
-            return IntervalSet { { Traits::min(), Traits::next(value) } };
+            return IntervalSet { { Utils::min(), Utils::next(value) } };
         }
         return make_full();
     }
@@ -240,11 +390,11 @@ public:
     /// @brief Constructs a set containing all values less then the given one.
     [[nodiscard]] static IntervalSet make_less(const T & value)
     {
-        KA_PRE(value_inside_allowed_range(value));
+        KA_PRE(Utils::value_inside_allowed_range(value));
 
-        if (Traits::less(Traits::min(), value))
+        if (Utils::less(Utils::min(), value))
         {
-            return IntervalSet { { Traits::min(), value } };
+            return IntervalSet { { Utils::min(), value } };
         }
         return make_empty();
     }
@@ -256,19 +406,19 @@ public:
         const T & supremum,
         const bool supremum_included)
     {
-        KA_PRE(value_inside_allowed_range(infinum));
-        KA_PRE(value_inside_allowed_range(supremum));
-        KA_PRE(!Traits::less(supremum, infinum));
+        KA_PRE(Utils::value_inside_allowed_range(infinum));
+        KA_PRE(Utils::value_inside_allowed_range(supremum));
+        KA_PRE(!Utils::less(supremum, infinum));
 
         // When supremum is included and it is the maximum allowed value, we should omit the endpoint.
-        if (supremum_included && !Traits::less(supremum, Traits::max()))
+        if (supremum_included && !Utils::less(supremum, Utils::max()))
         {
-            return IntervalSet { { infinum_included ? infinum : Traits::next(infinum) } };
+            return IntervalSet { { infinum_included ? infinum : Utils::next(infinum) } };
         }
 
-        const auto first_endpoint = infinum_included ? infinum : Traits::next(infinum);
-        const auto second_endpoint = supremum_included ? Traits::next(supremum) : supremum;
-        if (!Traits::less(first_endpoint, second_endpoint))
+        const auto first_endpoint = infinum_included ? infinum : Utils::next(infinum);
+        const auto second_endpoint = supremum_included ? Utils::next(supremum) : supremum;
+        if (!Utils::less(first_endpoint, second_endpoint))
         {
             return make_empty();
         }
@@ -280,10 +430,10 @@ public:
     [[nodiscard]] IntervalSet complement() const
     {
         std::vector<T> result_endpoints;
-        if (endpoints_.empty() || !equal(endpoints_.front(), Traits::min()))
+        if (endpoints_.empty() || !Utils::equal(endpoints_.front(), Utils::min()))
         {
             result_endpoints.reserve(endpoints_.size() + 1);
-            result_endpoints.push_back(Traits::min());
+            result_endpoints.push_back(Utils::min());
             result_endpoints.insert(result_endpoints.end(), endpoints_.begin(), endpoints_.end());
         }
         else
@@ -315,12 +465,12 @@ public:
         {
             auto value = [&]
             {
-                if (rhs_it == rhs_end || (lhs_it != lhs_end && Traits::less(*lhs_it, *rhs_it)))
+                if (rhs_it == rhs_end || (lhs_it != lhs_end && Utils::less(*lhs_it, *rhs_it)))
                 {
                     inside_lhs = !inside_lhs;
                     return *lhs_it++;
                 }
-                if (lhs_it == lhs_end || (rhs_it != rhs_end && Traits::less(*rhs_it, *lhs_it)))
+                if (lhs_it == lhs_end || (rhs_it != rhs_end && Utils::less(*rhs_it, *lhs_it)))
                 {
                     inside_rhs = !inside_rhs;
                     return *rhs_it++;
@@ -346,7 +496,7 @@ private:
     IntervalSet(std::vector<T> && endpoints) noexcept
         : endpoints_ { std::move(endpoints) }
     {
-        KA_PRE(std::ranges::all_of(endpoints, value_inside_allowed_range));
+        KA_PRE(std::ranges::all_of(endpoints, Utils::value_inside_allowed_range));
         KA_PRE(all_values_are_ordered(endpoints));
     }
 
@@ -355,28 +505,16 @@ private:
     {
         constexpr auto not_ordered = [](const auto & lhs, const auto & rhs)
         {
-            return !Traits::less(lhs, rhs);
+            return !Utils::less(lhs, rhs);
         };
         return std::ranges::adjacent_find(endpoints, not_ordered) == endpoints.end();
-    }
-
-    /// @brief Returns true if the value is inside allowed range of values for given Traits.
-    [[nodiscard]] constexpr static bool value_inside_allowed_range(const T & value) noexcept
-    {
-        return !Traits::less(value, Traits::min()) && !Traits::less(Traits::max(), value);
-    }
-
-    /// @brief Returns true if elements are equal acording to the Traits.
-    [[nodiscard]] constexpr static bool equal(const T & lhs, const T & rhs) noexcept
-    {
-        return !Traits::less(lhs, rhs) && !Traits::less(rhs, lhs);
     }
 
 private:
     /// @brief Strictly ascending sequence of endpoints of half-open subintervals.
     ///
     /// @details Endpoints at even indices are inclusive subinterval infima, endpoints at odd indices are exclusive
-    /// subinterval suprema. If a supremum is greater than Traits::max(), it is omitted.
+    /// subinterval suprema. If a supremum is greater than Utils::max(), it is omitted.
     std::vector<T> endpoints_;
 };
 
@@ -513,6 +651,8 @@ class IntervalSetElementsIterator final
 {
     friend class IntervalSet<T, Traits>;
 
+    using Utils = IntervalUtils<T, Traits>;
+
 public:
     using value_type = T;
     using difference_type = std::ptrdiff_t;
@@ -540,16 +680,16 @@ public:
         {
             return false;
         }
-        return !Traits::less(item_, other.item_) && !Traits::less(other.item_, item_);
+        return Utils::equal(item_, other.item_);
     }
 
     IntervalSetElementsIterator & operator++() noexcept
     {
         KA_PRE(interval_.valid());
 
-        if (Traits::less(item_, interval_->second))
+        if (Utils::less(item_, interval_->second))
         {
-            item_ = Traits::next(item_);
+            item_ = Utils::next(item_);
         }
         else
         {
@@ -561,9 +701,9 @@ public:
 
     IntervalSetElementsIterator & operator--() noexcept
     {
-        if (interval_.valid() && Traits::less(interval_->first, item_))
+        if (interval_.valid() && Utils::less(interval_->first, item_))
         {
-            item_ = Traits::prev(item_);
+            item_ = Utils::prev(item_);
         }
         else
         {
@@ -596,13 +736,13 @@ private:
 
     [[nodiscard]] static T interval_start_or_invalid(IntervalSetIntervalsIterator<T, Traits> interval)
     {
-        return interval.valid() ? interval->first : Traits::max();
+        return interval.valid() ? interval->first : Utils::max();
     }
 
 private:
     /// @brief Iterator to the current interval of the parent set.
     IntervalSetIntervalsIterator<T, Traits> interval_;
-    /// @brief The current element, or Traits::max() if interval_ is not valid.
+    /// @brief The current element, or Utils::max() if interval_ is not valid.
     T item_;
 };
 
@@ -610,6 +750,8 @@ template <typename T, IntervalTraitsFor<T> Traits>
 class IntervalSetIntervalsIterator final
 {
     friend class IntervalSet<T, Traits>::Intervals;
+
+    using Utils = IntervalUtils<T, Traits>;
 
 public:
     using value_type = std::pair<T, T>;
@@ -646,9 +788,9 @@ public:
         KA_PRE(index_ < endpoints_.size());
         if (index_ == endpoints_.size() - 1)
         {
-            return { endpoints_[index_], Traits::max() };
+            return { endpoints_[index_], Utils::max() };
         }
-        return { endpoints_[index_], Traits::prev(endpoints_[index_ + 1]) };
+        return { endpoints_[index_], Utils::prev(endpoints_[index_ + 1]) };
     }
 
     [[nodiscard]] auto operator->() const noexcept
