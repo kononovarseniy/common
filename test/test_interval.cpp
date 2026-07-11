@@ -20,12 +20,12 @@ using std::get;
 
 // Trait type aliases for testing different operator combinations
 
-using LessOnly = NoBuiltinOperatorsIntIntervalTraits<true, false, false>;
-using CmpOnly = NoBuiltinOperatorsIntIntervalTraits<false, false, true>;
-using LessEqual = NoBuiltinOperatorsIntIntervalTraits<true, true, false>;
-using CmpEqual = NoBuiltinOperatorsIntIntervalTraits<false, true, true>;
-using AllTraits = NoBuiltinOperatorsIntIntervalTraits<true, true, true>;
-using LessCmp = NoBuiltinOperatorsIntIntervalTraits<true, false, true>;
+using LessOnly = NoBuiltinOperatorsIntIntervalTraits<true, false, false, size_t>;
+using CmpOnly = NoBuiltinOperatorsIntIntervalTraits<false, false, true, size_t>;
+using LessEqual = NoBuiltinOperatorsIntIntervalTraits<true, true, false, size_t>;
+using CmpEqual = NoBuiltinOperatorsIntIntervalTraits<false, true, true, size_t>;
+using AllTraits = NoBuiltinOperatorsIntIntervalTraits<true, true, true, size_t>;
+using LessCmp = NoBuiltinOperatorsIntIntervalTraits<true, false, true, size_t>;
 
 // RingInterval default construction and basic operations
 
@@ -74,7 +74,7 @@ TEST(RingIntervalTest, default_complement)
 {
     const RingInterval<s32> interval;
     const auto comp = interval.complement();
-    EXPECT_TRUE(comp.empty());
+    EXPECT_TRUE(comp.full());
 }
 
 TEST(RingIntervalTest, complement_double)
@@ -87,13 +87,26 @@ TEST(RingIntervalTest, complement_double)
     EXPECT_EQ(interval.last(), comp2.last());
 }
 
-TEST(RingIntervalTest, complement_empty_is_empty)
+TEST(RingIntervalTest, complement_empty_is_full)
 {
     const RingInterval<s32> empty_interval;
     const auto comp = empty_interval.complement();
-    EXPECT_TRUE(comp.empty());
-    EXPECT_FALSE(comp.full());
+    EXPECT_TRUE(comp.full());
+    EXPECT_FALSE(comp.empty());
     EXPECT_TRUE(comp.continuous());
+}
+
+TEST(RingIntervalTest, complement_of_empty_contains_all_values)
+{
+    const RingInterval<s32> empty_interval;
+    const auto comp = empty_interval.complement();
+    EXPECT_TRUE(comp.full());
+    EXPECT_FALSE(comp.empty());
+    EXPECT_TRUE(comp.contains(std::numeric_limits<s32>::min()));
+    EXPECT_TRUE(comp.contains(-1));
+    EXPECT_TRUE(comp.contains(0));
+    EXPECT_TRUE(comp.contains(1));
+    EXPECT_TRUE(comp.contains(std::numeric_limits<s32>::max()));
 }
 
 TEST(RingIntervalTest, structured_bindings)
@@ -161,7 +174,7 @@ TEST(RingIntervalTest, less_only_traits)
     EXPECT_EQ(min_val.value, interval.last().value);
 
     const auto comp = interval.complement();
-    EXPECT_TRUE(comp.empty());
+    EXPECT_TRUE(comp.full());
 }
 
 TEST(RingIntervalTest, cmp_only_traits)
@@ -186,7 +199,7 @@ TEST(RingIntervalTest, cmp_only_traits)
     EXPECT_EQ(min_val.value, interval.last().value);
 
     const auto comp = interval.complement();
-    EXPECT_TRUE(comp.empty());
+    EXPECT_TRUE(comp.full());
 }
 
 TEST(RingIntervalTest, less_equal_traits)
@@ -208,7 +221,7 @@ TEST(RingIntervalTest, less_equal_traits)
     EXPECT_EQ(size_t { 0u }, interval.size());
 
     const auto comp = interval.complement();
-    EXPECT_TRUE(comp.empty());
+    EXPECT_TRUE(comp.full());
 }
 
 TEST(RingIntervalTest, cmp_equal_traits)
@@ -230,7 +243,7 @@ TEST(RingIntervalTest, cmp_equal_traits)
     EXPECT_EQ(size_t { 0u }, interval.size());
 
     const auto comp = interval.complement();
-    EXPECT_TRUE(comp.empty());
+    EXPECT_TRUE(comp.full());
 }
 
 TEST(RingIntervalTest, all_traits)
@@ -252,7 +265,7 @@ TEST(RingIntervalTest, all_traits)
     EXPECT_EQ(size_t { 0u }, interval.size());
 
     const auto comp = interval.complement();
-    EXPECT_TRUE(comp.empty());
+    EXPECT_TRUE(comp.full());
 }
 
 TEST(RingIntervalTest, less_cmp_traits)
@@ -274,7 +287,7 @@ TEST(RingIntervalTest, less_cmp_traits)
     EXPECT_EQ(size_t { 0u }, interval.size());
 
     const auto comp = interval.complement();
-    EXPECT_TRUE(comp.empty());
+    EXPECT_TRUE(comp.full());
 }
 
 TEST(RingIntervalTest, structured_bindings_less_only)

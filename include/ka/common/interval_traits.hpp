@@ -80,21 +80,39 @@ struct IntervalValueUtils final
         return Traits::max();
     }
 
+    // TODO: remove?
     /// @brief Largest value strictly less then the value.
     [[nodiscard]] static constexpr T prev(const T & value) noexcept
     {
+        KA_PRE(less(min(), value));
         return Traits::prev(value);
     }
 
+    /// @brief Largest value strictly less then the value, and max if the value is min.
+    [[nodiscard]] static constexpr T prev_wrap(const T & value) noexcept
+    {
+        return less(min(), value) ? Traits::prev(value) : max();
+    }
+
+    // TODO: remove?
     /// @brief Smalest value strictly greater then the value.
     [[nodiscard]] static constexpr T next(const T & value) noexcept
     {
+        KA_PRE(less(value, max()));
         return Traits::next(value);
+    }
+
+    /// @brief Smalest value strictly greater then the value, and min if the value is max.
+    [[nodiscard]] static constexpr T next_wrap(const T & value) noexcept
+    {
+        return less(value, max()) ? Traits::next(value) : min();
     }
 
     /// @brief Returns the number of increments (applications of next) needed to go from first to last.
     /// @pre first <= last.
-    [[nodiscard]] static constexpr size_t distance(const T & first, const T & last) noexcept
+    [[nodiscard]] static constexpr IntervalValueTraitsSizeType<Traits> distance(
+        const T & first,
+        const T & last) noexcept
     {
         KA_PRE(less_or_equal(first, last));
         return Traits::distance(first, last);

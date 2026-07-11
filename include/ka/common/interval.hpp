@@ -1,3 +1,29 @@
+/// @brief Intervals defined by two numbers on the ring.
+/// @details
+/// This module contains two classes \c RingInterval and \c Interval.
+/// The set of intervals represented by the \c RingInterval
+/// is the superset of the set of intervals represented by the \c Interval.
+/// \c RingInterval is closed over set complement and not closed over set intersection.
+/// \c Interval is closed over set intersection and not closed over set complement (almost no support other than for
+/// empty and full intervals).
+/// There is no class \c ComplementInterval that would be other superset of \c RingInterval and be closed over set
+/// union. The \c ComplementInterval should be prety easy to simulate using the set complement of set intersection of
+/// \c Interval instances.
+///
+/// Let T be a totally ordered type with discrete values, that includes its infimum (min) and supremum (max) values.
+/// Such as fixed-width integer types or floating-points types without negative zero and NaNs.
+/// Let first and last be two instances of T.
+/// We can define several cases:
+/// * first < last: naturaly this case represents half-open interval [first, last);
+/// * first > last && (first != max || last != max): can be used to represent complement of any half-open interval which
+/// is [min, last) U [first, max].
+/// * first == last == max: contrintuitively this case is choosen to represent the empty set.
+/// The case first == last contains multiple representations of the same full set [min, max], we arbvitrary choose one
+/// special value to represent the empty set. It is also easier to build as the constant max is provided by the type.
+///
+/// @note Choosing first == last to represent the empty set would not allow one to use modular arithmetics to build a
+/// full set when building the set {x : x >= value } when the value == min.
+
 #pragma once
 
 #include <concepts>
@@ -15,17 +41,11 @@ namespace ka
 /// @note Set complement is closed over the type.
 /// @details
 /// The interval can be in one of four forms:
-/// * Normal (first < last):
-///       half-open interval [first, last).
-///
-/// * Empty (first == last and first == Traits::min()):
-///       empty set.
-///
-/// * Full (first == last and first == Traits::max()):
-///       full range of values [Traits::min(), Traits::max()]
-///
-/// * Discontinuous (first > last):
-///       [Traits::min(), last) U [first, Traits::max()) which is the complement of a half-open interval.
+/// * Normal (first < last): half-open interval [first, last).
+/// * Empty: empty set
+/// * Full: full range of values [Traits::min(), Traits::max()]
+/// * Discontinuous (first > last): [Traits::min(), last) U [first, Traits::max()) which is the complement of a
+/// half-open interval.
 template <typename T, IntervalValueTraitsFor<T> Traits = IntervalValueTraits<T>>
 class RingInterval final
 {
@@ -94,15 +114,19 @@ public:
     [[nodiscard]] constexpr bool contains(const T & value) const noexcept
     {
         KA_PRE(valid());
+        KA_PRE(Utils::value_inside_allowed_range(value));
 
-        if (continuous())
+        const auto cmp = Utils::cmp(first_, last_);
+        if (cmp < 0)
         {
             return Utils::less_or_equal(first_, value) && Utils::less(value, last_);
         }
-        else
+        if (cmp > 0)
         {
             return Utils::less(value, last_) || Utils::less_or_equal(first_, value);
         }
+        // When all values are valid this line is equivalent to first_ != min (full range).
+        return Utils::less(Utils::min(), first_);
     }
 
     [[nodiscard]] constexpr auto size() const noexcept
@@ -123,10 +147,107 @@ public:
     [[nodiscard]] constexpr RingInterval complement() const noexcept
     {
         KA_PRE(valid());
-        return RingInterval { last_, first_ };
+        if (!Utils::equal(first_, last_))
+        {
+            return RingInterval { last_, first_ };
+        }
+        return Utils::equal(first_, Utils::min())
+                   ? RingInterval { Utils::max(), Utils::max() }
+                   : RingInterval { Utils::min(), Utils::min() };
     }
 
-    // See TODO.md
+    /// @brief Returns an empty interval.
+    [[nodiscard]] static constexpr RingInterval make_empty() noexcept
+    {
+        return RingInterval(Utils::min(), Utils::min());
+    }
+
+    /// @brief Returns a full interval containing all values.
+    [[nodiscard]] static constexpr RingInterval make_full() noexcept
+    {
+        return RingInterval(Utils::max(), Utils::max());
+    }
+
+    /// @brief Returns a half-open interval [first, last).
+    /// @pre first <= last
+    [[nodiscard]] static constexpr RingInterval make_range(const T & first, const T & last) noexcept
+    {
+        KA_PRE(Utils::less_or_equal(first, last));
+        if (Utils::equal(first, last))
+        {
+            return make_empty();
+        }
+        return RingInterval(first, last);
+    }
+
+    /// @brief Returns the complement of the half-open interval [first, last).
+    /// @pre first <= last
+    [[nodiscard]] static constexpr RingInterval make_range_complement(const T & first, const T & last) noexcept
+    {
+        KA_PRE(Utils::less_or_equal(first, last));
+        if (Utils::equal(first, last))
+        {
+            return make_full();
+        }
+        return RingInterval(last, first);
+    }
+
+    /// @brief Returns an interval of all values strictly less than value.
+    [[nodiscard]] static constexpr RingInterval make_less(const T & value) noexcept
+    {
+        // Empty range is handled naturaly.
+        return RingInterval(Utils::min(), value);
+    }
+
+    /// @brief Returns an interval of all values less than or equal to value.
+    [[nodiscard]] static constexpr RingInterval make_less_or_equal(const T & value) noexcept
+    {
+        if (Utils::equal(value, Utils::max()))
+        {
+            return make_full();
+        }
+        return RingInterval(Utils::min(), Utils::next(value));
+    }
+
+    /// @brief Returns an interval containing only value.
+    [[nodiscard]] static constexpr RingInterval make_equal(const T & value) noexcept
+    {
+        if (Utils::equal(value, Utils::max()))
+        {
+            return RingInterval(Utils::max(), Utils::min());
+        }
+        return RingInterval(value, Utils::next(value));
+    }
+
+    /// @brief Returns an interval containing all values except given value.
+    [[nodiscard]] static constexpr RingInterval make_not_equal(const T & value) noexcept
+    {
+        if (Utils::equal(value, Utils::max()))
+        {
+            return RingInterval(Utils::min(), Utils::max());
+        }
+        return RingInterval(Utils::next(value), value);
+    }
+
+    /// @brief Returns an interval of all values greater than or equal to value.
+    [[nodiscard]] static constexpr RingInterval make_greater_or_equal(const T & value) noexcept
+    {
+        if (Utils::equal(value, Utils::min()))
+        {
+            return make_full();
+        }
+        return RingInterval(value, Utils::min());
+    }
+
+    /// @brief Returns an interval of all values strictly greater than value.
+    [[nodiscard]] static constexpr RingInterval make_greater(const T & value) noexcept
+    {
+        if (Utils::equal(value, Utils::max()))
+        {
+            return make_empty();
+        }
+        return RingInterval(Utils::next(value), Utils::min());
+    }
 
 private:
     /// @brief Should always return true.
@@ -148,6 +269,9 @@ private:
     }
 
 private:
+    // Special ranges encoded with first_ == last_.
+    // Empty: first == last == Traits::min()
+    // Full: first == last == Traits::max()
     T first_;
     T last_;
 };
@@ -156,14 +280,9 @@ private:
 /// @note Set intersection is closed over the type.
 /// @details
 /// The interval can be in one of three forms:
-/// * Normal (first < last):
-///       half-open interval [first, last).
-///
-/// * Empty (first == last and first == Traits::min()):
-///       empty set.
-///
-/// * Full (first == last and first == Traits::max()):
-///       full range of values [Traits::min(), Traits::max()]
+/// * Normal (first < last): half-open interval [first, last).
+/// * Empty: empty set
+/// * Full: full range of values [Traits::min(), Traits::max()]
 template <typename T, IntervalValueTraitsFor<T> Traits = IntervalValueTraits<T>>
 class Interval final
 {
@@ -234,7 +353,68 @@ public:
         return Utils::distance(first_, last_);
     }
 
-    // See TODO.md
+    /// @brief Returns an empty interval.
+    [[nodiscard]] static constexpr Interval make_empty() noexcept
+    {
+        return Interval(Utils::min(), Utils::min());
+    }
+
+    /// @brief Returns a full interval containing all values.
+    [[nodiscard]] static constexpr Interval make_full() noexcept
+    {
+        return Interval(Utils::max(), Utils::max());
+    }
+
+    /// @brief Returns a half-open interval [first, last).
+    [[nodiscard]] static constexpr Interval make_range(const T & first, const T & last) noexcept
+    {
+        return Interval(first, last);
+    }
+
+    /// @brief Returns an interval of all values strictly less than value.
+    [[nodiscard]] static constexpr Interval make_less(const T & value) noexcept
+    {
+        // Empty range is handled naturaly.
+        return Interval(Utils::min(), value);
+    }
+
+    /// @brief Returns an interval of all values less than or equal to value.
+    [[nodiscard]] static constexpr Interval make_less_or_equal(const T & value) noexcept
+    {
+        if (Utils::equal(value, Utils::max()))
+        {
+            return make_full();
+        }
+        return Interval(Utils::min(), Utils::next(value));
+    }
+
+    /// @brief Returns an interval containing only value.
+    [[nodiscard]] static constexpr Interval make_equal(const T & value) noexcept
+    {
+        // TODO: Fix value == max().
+        return Interval(value, Utils::next(value));
+    }
+
+    /// @brief Returns an interval of all values greater than or equal to value.
+    /// @note When value == Traits::min(), returns full. For other values, max() is excluded from the result.
+    [[nodiscard]] static constexpr Interval make_greater_or_equal(const T & value) noexcept
+    {
+        if (Utils::equal(value, Utils::min()))
+        {
+            return make_full();
+        }
+        return Interval(value, Utils::max());
+    }
+
+    /// @brief Returns an interval of all values strictly greater than value.
+    [[nodiscard]] static constexpr Interval make_greater(const T & value) noexcept
+    {
+        if (Utils::equal(value, Utils::max()))
+        {
+            return make_empty();
+        }
+        return Interval(Utils::next(value), Utils::max());
+    }
 
 private:
     /// @brief Should always return true.
@@ -260,6 +440,9 @@ private:
     }
 
 private:
+    // Special ranges encoded with first_ == last_.
+    // Empty: first == last == Traits::min()
+    // Full: first == last == Traits::max()
     T first_;
     T last_;
 };

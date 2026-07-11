@@ -16,24 +16,25 @@ namespace ka
 
 // Trait type aliases for testing different operator combinations
 
-using LessOnly = NoBuiltinOperatorsIntIntervalTraits<true, false, false>;
-using CmpOnly = NoBuiltinOperatorsIntIntervalTraits<false, false, true>;
-using LessEqual = NoBuiltinOperatorsIntIntervalTraits<true, true, false>;
-using CmpEqual = NoBuiltinOperatorsIntIntervalTraits<false, true, true>;
-using AllTraits = NoBuiltinOperatorsIntIntervalTraits<true, true, true>;
-using LessCmp = NoBuiltinOperatorsIntIntervalTraits<true, false, true>;
-using NoneTraits = NoBuiltinOperatorsIntIntervalTraits<false, false, false>;
-using LessOnlyNoDistance = NoBuiltinOperatorsIntIntervalTraits<true, false, false, false>;
-using CmpOnlyNoDistance = NoBuiltinOperatorsIntIntervalTraits<false, false, true, false>;
+using LessOnly = NoBuiltinOperatorsIntIntervalTraits<true, false, false, size_t>;
+using CmpOnly = NoBuiltinOperatorsIntIntervalTraits<false, false, true, size_t>;
+using LessEqual = NoBuiltinOperatorsIntIntervalTraits<true, true, false, size_t>;
+using CmpEqual = NoBuiltinOperatorsIntIntervalTraits<false, true, true, size_t>;
+using AllTraits = NoBuiltinOperatorsIntIntervalTraits<true, true, true, size_t>;
+using LessCmp = NoBuiltinOperatorsIntIntervalTraits<true, false, true, size_t>;
+using NoneTraits = NoBuiltinOperatorsIntIntervalTraits<false, false, false, void>;
+using LessOnlyNoDistance = NoBuiltinOperatorsIntIntervalTraits<true, false, false, void>;
+using CmpOnlyNoDistance = NoBuiltinOperatorsIntIntervalTraits<false, false, true, void>;
+using LessOnlyS32Size = NoBuiltinOperatorsIntIntervalTraits<true, false, false, s32>;
 
-static_assert(!IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<false, false, false>, NoBuiltinOperatorsInt>);
-static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<false, false, true>, NoBuiltinOperatorsInt>);
-static_assert(!IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<false, true, false>, NoBuiltinOperatorsInt>);
-static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<false, true, true>, NoBuiltinOperatorsInt>);
-static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<true, false, false>, NoBuiltinOperatorsInt>);
-static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<true, false, true>, NoBuiltinOperatorsInt>);
-static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<true, true, false>, NoBuiltinOperatorsInt>);
-static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<true, true, true>, NoBuiltinOperatorsInt>);
+static_assert(!IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<false, false, false, void>, NoBuiltinOperatorsInt>);
+static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<false, false, true, void>, NoBuiltinOperatorsInt>);
+static_assert(!IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<false, true, false, void>, NoBuiltinOperatorsInt>);
+static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<false, true, true, void>, NoBuiltinOperatorsInt>);
+static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<true, false, false, void>, NoBuiltinOperatorsInt>);
+static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<true, false, true, void>, NoBuiltinOperatorsInt>);
+static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<true, true, false, void>, NoBuiltinOperatorsInt>);
+static_assert(IntervalValueTraitsFor<NoBuiltinOperatorsIntIntervalTraits<true, true, true, void>, NoBuiltinOperatorsInt>);
 
 // HasIntervalValueLess concept checks
 
@@ -86,6 +87,9 @@ static_assert(SizedIntervalValueTraitsFor<AllTraits, NoBuiltinOperatorsInt>);
 static_assert(SizedIntervalValueTraitsFor<LessCmp, NoBuiltinOperatorsInt>);
 static_assert(!SizedIntervalValueTraitsFor<LessOnlyNoDistance, NoBuiltinOperatorsInt>);
 static_assert(!SizedIntervalValueTraitsFor<CmpOnlyNoDistance, NoBuiltinOperatorsInt>);
+static_assert(SizedIntervalValueTraitsFor<LessOnlyS32Size, NoBuiltinOperatorsInt>);
+static_assert(std::same_as<IntervalValueTraitsSizeType<LessOnly>, size_t>);
+static_assert(std::same_as<IntervalValueTraitsSizeType<LessOnlyS32Size>, s32>);
 
 static_assert(ComparableIntervalValueTraits<IntervalValueTraits<s32>>);
 static_assert(ComparableIntervalValueTraits<LessOnly>);
@@ -303,7 +307,7 @@ TEST(IntervalValueUtilsTest, greater_less_only)
     EXPECT_TRUE(Utils::greater(c, b));
 }
 
-TEST(IntervalValueUtilsTest, greater_cmp_only_bug)
+TEST(IntervalValueUtilsTest, greater_cmp_only)
 {
     using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, CmpOnly>;
     const NoBuiltinOperatorsInt a { -1 };
@@ -389,8 +393,8 @@ TEST(IntervalValueUtilsTest, value_inside_allowed_range)
     const NoBuiltinOperatorsInt min_val = LessOnly::min();
     const NoBuiltinOperatorsInt max_val = LessOnly::max();
     const NoBuiltinOperatorsInt mid { 0 };
-    const NoBuiltinOperatorsInt below_min { std::numeric_limits<s32>::min() + 1 };
-    const NoBuiltinOperatorsInt above_max { std::numeric_limits<s32>::max() - 1 };
+    const NoBuiltinOperatorsInt below_min { exact_cast<s16>(std::numeric_limits<s16>::min() + 1) };
+    const NoBuiltinOperatorsInt above_max { exact_cast<s16>(std::numeric_limits<s16>::max() - 1) };
 
     EXPECT_TRUE(Utils::value_inside_allowed_range(min_val));
     EXPECT_TRUE(Utils::value_inside_allowed_range(max_val));
