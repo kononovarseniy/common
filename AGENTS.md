@@ -46,9 +46,9 @@ Windows runs these serially due to issues with parallel execution.
 - **Assertions**: for assertions, use macros `KA_ASSERT`, `KA_PRE`, `KA_POST`, `KA_UNREACHABLE` from `<ka/common/assert.hpp>`. Assertionas are disabled in `NDEBUG` builds. Assertions can be used both in `consteval` and runtime paths. The macros do not require extra parentheses around the condition when it contains commas.
 - **Pragma wrappers**: for portable warning push/pop macros, use `<ka/common/pragma.hpp>`.
 - **Arithmetic casts**: implicit conversions between arithmetic types are forbidden. For arithmetic casts, use functions from `<ka/common/cast.hpp>`.
-  - `safe_cast` — when types always allow lossless conversion (guaranteed at compile time, no runtime asserts).
-  - `exact_cast` — when the source type allows precision loss, but the caller guarantees it does not occur and expects the value to be preserved (includes runtime asserts for correctness).
-  - `static_cast` — when value change during conversion is a normal part of the algorithm.
+  - `safe_cast<T>(value)` — when types always allow lossless conversion (guaranteed at compile time, no runtime asserts).
+  - `exact_cast<T>(value)` — when the source type allows precision loss, but the caller guarantees it does not occur and expects the value to be preserved (includes runtime asserts for correctness).
+  - `static_cast<T>(value)` — when value change during conversion is a normal part of the algorithm.
 - **New headers**: must be added to `target_sources` in `CMakeLists.txt` under `PUBLIC FILE_SET HEADERS`.
 - **New test files**: add to `ka_gtest_target` SOURCES list in `CMakeLists.txt`.
 - **Compile-time tests**: when testing C++20 concepts and `constexpr`/`consteval` functions, use `static_assert` directly in the test file.
