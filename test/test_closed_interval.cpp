@@ -20,6 +20,7 @@ using std::get;
 // Concept checks
 
 static_assert(Hashable<ClosedInterval<s32>>);
+static_assert(Hashable<MaybeTwoClosedIntervals<s32>>);
 
 // Trait type aliases for testing different operator combinations
 
@@ -326,6 +327,204 @@ TEST(ClosedIntervalTest, constexpr_equal)
     constexpr ClosedInterval<s32> c { 2, 5 };
     static_assert(a == b);
     static_assert(!(a == c));
+}
+
+TEST(MaybeTwoClosedIntervalsTest, default_constructible)
+{
+    const MaybeTwoClosedIntervals<s32> intervals;
+    EXPECT_EQ(0u, intervals.size());
+    EXPECT_EQ(intervals.begin(), intervals.end());
+}
+
+TEST(MaybeTwoClosedIntervalsTest, copy_constructible)
+{
+    const ClosedInterval<s32> a { 1, 2 };
+    const ClosedInterval<s32> b { 4, 6 };
+    const MaybeTwoClosedIntervals<s32> intervals(a, b);
+    auto copy = intervals;
+    EXPECT_EQ(intervals.size(), copy.size());
+    EXPECT_EQ(intervals == copy, true);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, copy_assignable)
+{
+    const ClosedInterval<s32> a { 1, 5 };
+    const MaybeTwoClosedIntervals<s32> intervals(a);
+    MaybeTwoClosedIntervals<s32> other;
+    other = intervals;
+    EXPECT_EQ(intervals.size(), other.size());
+    EXPECT_TRUE(intervals == other);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, move_constructible)
+{
+    const ClosedInterval<s32> a { 1, 2 };
+    const ClosedInterval<s32> b { 4, 6 };
+    MaybeTwoClosedIntervals<s32> intervals(a, b);
+    auto moved = std::move(intervals);
+    EXPECT_EQ(2u, moved.size());
+    auto it = moved.begin();
+    EXPECT_EQ(a, *it);
+    ++it;
+    EXPECT_EQ(b, *it);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, move_assignable)
+{
+    const ClosedInterval<s32> a { 3, 7 };
+    MaybeTwoClosedIntervals<s32> intervals(a);
+    MaybeTwoClosedIntervals<s32> other;
+    other = std::move(intervals);
+    EXPECT_EQ(1u, other.size());
+    EXPECT_EQ(a, *other.begin());
+}
+
+TEST(MaybeTwoClosedIntervalsTest, single_interval)
+{
+    const ClosedInterval<s32> a { 1, 5 };
+    const MaybeTwoClosedIntervals<s32> intervals(a);
+    EXPECT_EQ(1u, intervals.size());
+    EXPECT_EQ(a, *intervals.begin());
+}
+
+TEST(MaybeTwoClosedIntervalsTest, two_intervals)
+{
+    const ClosedInterval<s32> a { 1, 3 };
+    const ClosedInterval<s32> b { 5, 8 };
+    const MaybeTwoClosedIntervals<s32> intervals(a, b);
+    EXPECT_EQ(2u, intervals.size());
+    auto it = intervals.begin();
+    EXPECT_EQ(a, *it);
+    ++it;
+    EXPECT_EQ(b, *it);
+    ++it;
+    EXPECT_EQ(it, intervals.end());
+}
+
+TEST(MaybeTwoClosedIntervalsTest, iterate_empty)
+{
+    const MaybeTwoClosedIntervals<s32> intervals;
+    size_t count = 0;
+    for ([[maybe_unused]] const auto & interval : intervals)
+    {
+        ++count;
+    }
+    EXPECT_EQ(0u, count);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, iterate_single)
+{
+    const ClosedInterval<s32> a { 2, 7 };
+    const MaybeTwoClosedIntervals<s32> intervals(a);
+    size_t count = 0;
+    for (const auto & interval : intervals)
+    {
+        EXPECT_EQ(a, interval);
+        ++count;
+    }
+    EXPECT_EQ(1u, count);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, iterate_two)
+{
+    const ClosedInterval<s32> a { 1, 2 };
+    const ClosedInterval<s32> b { 4, 6 };
+    const MaybeTwoClosedIntervals<s32> intervals(a, b);
+    std::array<ClosedInterval<s32>, 2> expected { a, b };
+    size_t i = 0;
+    for (const auto & interval : intervals)
+    {
+        EXPECT_EQ(expected[i], interval);
+        ++i;
+    }
+    EXPECT_EQ(2u, i);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, equal_empty)
+{
+    const MaybeTwoClosedIntervals<s32> a;
+    const MaybeTwoClosedIntervals<s32> b;
+    EXPECT_TRUE(a == b);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, equal_single)
+{
+    const ClosedInterval<s32> iv { 1, 5 };
+    const MaybeTwoClosedIntervals<s32> a(iv);
+    const MaybeTwoClosedIntervals<s32> b(iv);
+    EXPECT_TRUE(a == b);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, equal_two)
+{
+    const ClosedInterval<s32> a1 { 1, 2 };
+    const ClosedInterval<s32> a2 { 4, 6 };
+    const ClosedInterval<s32> b1 { 1, 2 };
+    const ClosedInterval<s32> b2 { 4, 6 };
+    const MaybeTwoClosedIntervals<s32> a(a1, a2);
+    const MaybeTwoClosedIntervals<s32> b(b1, b2);
+    EXPECT_TRUE(a == b);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, not_equal_empty_vs_single)
+{
+    const MaybeTwoClosedIntervals<s32> a;
+    const MaybeTwoClosedIntervals<s32> b(ClosedInterval<s32> { 1, 5 });
+    EXPECT_FALSE(a == b);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, not_equal_different_intervals)
+{
+    const MaybeTwoClosedIntervals<s32> a(ClosedInterval<s32> { 1, 2 }, ClosedInterval<s32> { 4, 6 });
+    const MaybeTwoClosedIntervals<s32> b(ClosedInterval<s32> { 1, 2 }, ClosedInterval<s32> { 5, 6 });
+    EXPECT_FALSE(a == b);
+}
+
+TEST(MaybeTwoClosedIntervalsTest, hash_equal_empty)
+{
+    MaybeTwoClosedIntervals<s32> a;
+    MaybeTwoClosedIntervals<s32> b;
+    Hasher ha;
+    ha.update(a);
+    Hasher hb;
+    hb.update(b);
+    EXPECT_EQ(ha.digest(), hb.digest());
+}
+
+TEST(MaybeTwoClosedIntervalsTest, hash_equal_single)
+{
+    const ClosedInterval<s32> iv { 3, 7 };
+    MaybeTwoClosedIntervals<s32> a(iv);
+    MaybeTwoClosedIntervals<s32> b(iv);
+    Hasher ha;
+    ha.update(a);
+    Hasher hb;
+    hb.update(b);
+    EXPECT_EQ(ha.digest(), hb.digest());
+}
+
+TEST(MaybeTwoClosedIntervalsTest, hash_equal_two)
+{
+    const ClosedInterval<s32> iv1 { 1, 2 };
+    const ClosedInterval<s32> iv2 { 5, 8 };
+    MaybeTwoClosedIntervals<s32> a(iv1, iv2);
+    MaybeTwoClosedIntervals<s32> b(iv1, iv2);
+    Hasher ha;
+    ha.update(a);
+    Hasher hb;
+    hb.update(b);
+    EXPECT_EQ(ha.digest(), hb.digest());
+}
+
+TEST(MaybeTwoClosedIntervalsTest, hash_different_count)
+{
+    MaybeTwoClosedIntervals<s32> a;
+    MaybeTwoClosedIntervals<s32> b(ClosedInterval<s32> { 1, 5 });
+    Hasher ha;
+    ha.update(a);
+    Hasher hb;
+    hb.update(b);
+    EXPECT_NE(ha.digest(), hb.digest());
 }
 
 } // namespace ka
