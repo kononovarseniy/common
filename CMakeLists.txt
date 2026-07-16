@@ -15,7 +15,9 @@ target_sources(${current_target}
     FILES
         include/ka/common/assert.hpp
         include/ka/common/cast.hpp
+        include/ka/common/closed_interval.hpp
         include/ka/common/fixed.hpp
+        include/ka/common/fmt_closed_interval.hpp
         include/ka/common/hash.hpp
         include/ka/common/interval_set.hpp
         include/ka/common/interval_traits.hpp
@@ -40,6 +42,8 @@ if(BUILD_TESTING)
             test/helpers/interval.hpp
             test/test_assert.cpp
             test/test_cast.cpp
+            test/test_closed_interval.cpp
+            test/test_fmt_closed_interval.cpp
             test/test_hash.cpp
             test/test_interval_set.cpp
             test/test_interval_traits.cpp
@@ -49,6 +53,7 @@ if(BUILD_TESTING)
     target_link_libraries(${current_target}_test
         PRIVATE
             ka::common
+            fmt::fmt
     )
 
     foreach(FUNC_SPEC IN ITEMS "consteval" "constexpr")
