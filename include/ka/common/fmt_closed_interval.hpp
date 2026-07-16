@@ -52,26 +52,69 @@ public:
         }
 
         auto outer_specs_first = ctx.begin();
-        auto outer_specs_last = std::ranges::find_if(
-            outer_specs_first,
-            ctx.end(),
-            [](const char c)
+        auto outer_specs_last = outer_specs_first;
+        auto brace_depth = 0;
+        while (outer_specs_last != ctx.end())
+        {
+            const char c = *outer_specs_last;
+            if (c == '{')
             {
-                return c == ':' || c == '}';
-            });
+                ++brace_depth;
+            }
+            else if (c == '}')
+            {
+                if (brace_depth == 0)
+                {
+                    break;
+                }
+                --brace_depth;
+            }
+            else if (c == ':' && brace_depth == 0)
+            {
+                break;
+            }
+            ++outer_specs_last;
+        }
+
         auto inner_specs_first = *outer_specs_last == ':' ? std::next(outer_specs_last) : outer_specs_last;
-        auto inner_specs_last = std::ranges::find(inner_specs_first, ctx.end(), '}');
+        auto inner_specs_last = inner_specs_first;
+        brace_depth = 0;
+        while (inner_specs_last != ctx.end())
+        {
+            const char c = *inner_specs_last;
+            if (c == '{')
+            {
+                ++brace_depth;
+            }
+            else if (c == '}')
+            {
+                if (brace_depth == 0)
+                {
+                    break;
+                }
+                --brace_depth;
+            }
+            ++inner_specs_last;
+        }
 
         fmt::format_parse_context outer_specs_ctx { std::string_view { outer_specs_first, outer_specs_last } };
         const auto outer_last = aligning_formatter.parse(outer_specs_ctx);
         if (outer_last != outer_specs_last)
         {
-            return outer_last;
+            fmt::report_error("Invalid specifiers in format string");
         }
 
         fmt::format_parse_context inner_specs_ctx { std::string_view { inner_specs_first, inner_specs_last } };
         const auto inner_last = endpoints_formatter.parse(inner_specs_ctx);
-        KA_ASSERT(inner_last == inner_specs_last);
+        if (inner_last != inner_specs_last)
+        {
+            fmt::report_error("Invalid specifiers in format string");
+        }
+
+        ctx.advance_to(inner_last);
+
+        // Тут вполне можем просто позвать нижележащий форматтер списывая у fmt/ranges
+        // Но вот для верхнеуровнего индексы аргументов никак не прокинуть так как не можем влиять на контекст.
 
         return inner_last;
     }
