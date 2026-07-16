@@ -209,7 +209,7 @@ struct IntervalValueUtils final
     }
 
     /// @brief Returns true if the value is inside allowed range of values for given Traits.
-    [[nodiscard]] static constexpr bool value_inside_allowed_range(const T & value) noexcept
+    [[nodiscard]] static constexpr bool value_is_valid(const T & value) noexcept
     {
         return !less(value, min()) && !less(max(), value);
     }

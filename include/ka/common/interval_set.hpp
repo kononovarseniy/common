@@ -54,7 +54,7 @@ public:
     /// @brief Returns true if the set contains given value.
     [[nodiscard]] bool contains(const T & value) const noexcept
     {
-        KA_PRE(Utils::value_inside_allowed_range(value));
+        KA_PRE(Utils::value_is_valid(value));
 
         const auto it = std::ranges::upper_bound(endpoints_, value, Utils::less);
         return std::distance(endpoints_.begin(), it) % 2 == 1;
@@ -185,7 +185,7 @@ public:
     /// @brief Constructs a set containing all values greater or equal to the given one.
     [[nodiscard]] static IntervalSet make_greater_equal(const T & value)
     {
-        KA_PRE(Utils::value_inside_allowed_range(value));
+        KA_PRE(Utils::value_is_valid(value));
 
         return IntervalSet { { value } };
     }
@@ -193,7 +193,7 @@ public:
     /// @brief Constructs a set containing all values greater than the given one.
     [[nodiscard]] static IntervalSet make_greater(const T & value)
     {
-        KA_PRE(Utils::value_inside_allowed_range(value));
+        KA_PRE(Utils::value_is_valid(value));
 
         if (Utils::less(value, Utils::max()))
         {
@@ -205,7 +205,7 @@ public:
     /// @brief Constructs a set containing single value.
     [[nodiscard]] static IntervalSet make_single_value(const T & value)
     {
-        KA_PRE(Utils::value_inside_allowed_range(value));
+        KA_PRE(Utils::value_is_valid(value));
 
         if (Utils::less(value, Utils::max()))
         {
@@ -217,7 +217,7 @@ public:
     /// @brief Constructs a set containing all values less or equal to the given one.
     [[nodiscard]] static IntervalSet make_less_equal(const T & value)
     {
-        KA_PRE(Utils::value_inside_allowed_range(value));
+        KA_PRE(Utils::value_is_valid(value));
 
         if (Utils::less(value, Utils::max()))
         {
@@ -229,7 +229,7 @@ public:
     /// @brief Constructs a set containing all values less then the given one.
     [[nodiscard]] static IntervalSet make_less(const T & value)
     {
-        KA_PRE(Utils::value_inside_allowed_range(value));
+        KA_PRE(Utils::value_is_valid(value));
 
         if (Utils::less(Utils::min(), value))
         {
@@ -245,8 +245,8 @@ public:
         const T & supremum,
         const bool supremum_included)
     {
-        KA_PRE(Utils::value_inside_allowed_range(infinum));
-        KA_PRE(Utils::value_inside_allowed_range(supremum));
+        KA_PRE(Utils::value_is_valid(infinum));
+        KA_PRE(Utils::value_is_valid(supremum));
         KA_PRE(!Utils::less(supremum, infinum));
 
         // When supremum is included and it is the maximum allowed value, we should omit the endpoint.
@@ -335,7 +335,7 @@ private:
     IntervalSet(std::vector<T> && endpoints) noexcept
         : endpoints_ { std::move(endpoints) }
     {
-        KA_PRE(std::ranges::all_of(endpoints, Utils::value_inside_allowed_range));
+        KA_PRE(std::ranges::all_of(endpoints, Utils::value_is_valid));
         KA_PRE(all_values_are_ordered(endpoints));
     }
 
