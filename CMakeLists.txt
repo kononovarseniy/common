@@ -18,6 +18,7 @@ target_sources(${current_target}
         include/ka/common/closed_interval.hpp
         include/ka/common/fixed.hpp
         include/ka/common/fmt_closed_interval.hpp
+        include/ka/common/fmt.hpp
         include/ka/common/hash.hpp
         include/ka/common/interval_set.hpp
         include/ka/common/interval_traits.hpp
