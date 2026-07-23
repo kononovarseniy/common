@@ -22,26 +22,25 @@ struct fmt::formatter<::ka::ClosedInterval<T, Traits>>
 
 private:
     fmt::formatter<T> endpoints_formatter;
-    fmt::formatter<std::string_view> aligning_formatter;
 
 private:
-    template <typename FormatContext>
-    auto align(FormatContext & ctx, const std::string_view str) const -> decltype(ctx.out())
-    {
-        return aligning_formatter.format(str, ctx);
-    }
+    // template <typename FormatContext>
+    // auto align(FormatContext & ctx, const std::string_view str) const -> decltype(ctx.out())
+    // {
+    //     return aligning_formatter.format(str, ctx);
+    // }
 
-    template <typename FormatContext>
-    auto format_unaligned(FormatContext & ctx, const ::ka::ClosedInterval<T, Traits> & interval) const
-        -> decltype(ctx.out())
-    {
-        auto out_it = ctx.out();
-        out_it = fmt::format_to(out_it, "[");
-        out_it = endpoints_formatter.format(interval.first(), ctx);
-        out_it = fmt::format_to(out_it, ", ");
-        out_it = endpoints_formatter.format(interval.last(), ctx);
-        return fmt::format_to(out_it, "]");
-    }
+    // template <typename FormatContext>
+    // auto format_unaligned(FormatContext & ctx, const ::ka::ClosedInterval<T, Traits> & interval) const
+    //     -> decltype(ctx.out())
+    // {
+    //     auto out_it = ctx.out();
+    //     out_it = fmt::format_to(out_it, "[");
+    //     out_it = endpoints_formatter.format(interval.first(), ctx);
+    //     out_it = fmt::format_to(out_it, ", ");
+    //     out_it = endpoints_formatter.format(interval.last(), ctx);
+    //     return fmt::format_to(out_it, "]");
+    // }
 
 public:
     constexpr auto parse(fmt::format_parse_context & ctx) -> decltype(ctx.begin())
@@ -51,40 +50,63 @@ public:
             return ctx.end();
         }
 
-        auto outer_specs_first = ctx.begin();
-        auto outer_specs_last = std::ranges::find_if(
-            outer_specs_first,
-            ctx.end(),
-            [](const char c)
-            {
-                return c == ':' || c == '}';
-            });
-        auto inner_specs_first = *outer_specs_last == ':' ? std::next(outer_specs_last) : outer_specs_last;
-        auto inner_specs_last = std::ranges::find(inner_specs_first, ctx.end(), '}');
-
-        fmt::format_parse_context outer_specs_ctx { std::string_view { outer_specs_first, outer_specs_last } };
-        const auto outer_last = aligning_formatter.parse(outer_specs_ctx);
-        if (outer_last != outer_specs_last)
+        auto it = ctx.begin();
+        if (*it == ':')
         {
-            return outer_last;
+            ctx.advance_to(std::next(it));
+            it = endpoints_formatter.parse(ctx);
         }
+        else
+        {
+            auto empty_ctx = fmt::format_parse_context { "" };
+            endpoints_formatter.parse(empty_ctx);
+        }
+        if (it != ctx.end() && *it != '}')
+        {
+            fmt::report_error("Invalid format specifier");
+        }
+        return it;
 
-        fmt::format_parse_context inner_specs_ctx { std::string_view { inner_specs_first, inner_specs_last } };
-        const auto inner_last = endpoints_formatter.parse(inner_specs_ctx);
-        KA_ASSERT(inner_last == inner_specs_last);
+        // auto outer_specs_first = ctx.begin();
+        // auto outer_specs_last = std::ranges::find_if(
+        //     outer_specs_first,
+        //     ctx.end(),
+        //     [](const char c)
+        //     {
+        //         return c == ':' || c == '}';
+        //     });
+        // auto inner_specs_first = *outer_specs_last == ':' ? std::next(outer_specs_last) : outer_specs_last;
+        // auto inner_specs_last = std::ranges::find(inner_specs_first, ctx.end(), '}');
 
-        return inner_last;
+        // fmt::format_parse_context outer_specs_ctx { std::string_view { outer_specs_first, outer_specs_last } };
+        // const auto outer_last = aligning_formatter.parse(outer_specs_ctx);
+        // if (outer_last != outer_specs_last)
+        // {
+        //     return outer_last;
+        // }
+
+        // fmt::format_parse_context inner_specs_ctx { std::string_view { inner_specs_first, inner_specs_last } };
+        // const auto inner_last = endpoints_formatter.parse(inner_specs_ctx);
+        // KA_ASSERT(inner_last == inner_specs_last);
+
+        // return inner_last;
     }
 
     template <typename FormatContext>
     auto format(const ::ka::ClosedInterval<T, Traits> & interval, FormatContext & ctx) const -> decltype(ctx.out())
     {
-        fmt::memory_buffer buf;
-        fmt::format_context buf_ctx { buf, fmt::format_args() }; // format_args ???
+        auto out_it = ctx.out();
+        out_it = fmt::format_to(out_it, "[");
+        out_it = endpoints_formatter.format(interval.first(), ctx);
+        out_it = fmt::format_to(out_it, ", ");
+        out_it = endpoints_formatter.format(interval.last(), ctx);
+        return fmt::format_to(out_it, "]");
+        // fmt::memory_buffer buf;
+        // fmt::format_context buf_ctx { buf, fmt::format_args() }; // format_args ???
 
-        format_unaligned(buf_ctx, interval);
+        // format_unaligned(buf_ctx, interval);
 
-        return align(ctx, std::string_view { buf.data(), buf.size() });
+        // return align(ctx, std::string_view { buf.data(), buf.size() });
     }
 };
 
@@ -103,7 +125,7 @@ struct fmt::formatter<std::optional<::ka::ClosedInterval<T, Traits>>> : fmt::for
         {
             return Super::format(interval.value(), ctx);
         }
-        return Super::align(ctx, "{}");
+        return fmt::format_to(ctx.out(), "{{}}");
     }
 };
 
@@ -120,23 +142,20 @@ struct fmt::formatter<::ka::MaybeTwoClosedIntervals<T, Traits>> : fmt::formatter
 
         if (intervals.size() == 0)
         {
-            return Super::align(ctx, "{}");
+            return fmt::format_to(ctx.out(), "{{}}");
         }
-
-        fmt::memory_buffer buf;
-        fmt::format_context buf_ctx { buf, fmt::format_args() }; // format_args ???
 
         if (intervals.size() == 1)
         {
-            Super::format_unaligned(buf_ctx, intervals.begin()[0]);
+            Super::format(intervals.begin()[0], ctx);
         }
         if (intervals.size() == 2)
         {
-            Super::format_unaligned(buf_ctx, intervals.begin()[0]);
-            fmt::format_to(std::back_inserter(buf), " U ");
-            Super::format_unaligned(buf_ctx, intervals.begin()[1]);
+            Super::format(intervals.begin()[0], ctx);
+            fmt::format_to(ctx.out(), " U ");
+            Super::format(intervals.begin()[1], ctx);
         }
 
-        return Super::align(ctx, std::string_view { buf.data(), buf.size() });
+        return ctx.out();
     }
 };

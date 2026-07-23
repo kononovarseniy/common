@@ -12,51 +12,65 @@
 namespace ka
 {
 
-// default_spec: formatting with default "{}" specifier.
+// The name of the test has the form <set_kind>_<spec_type>[_<test_name>].
+// All supported combinations must be present.
+// set_kind:
+// * empty_set - tests for std::optional and MaybeTwoClosedIntervals representing empty set,
+// * single_interval - tests for all three types representing single interval,
+// * two_intervals - tests for MaybeTwoClosedIntervals representing two intervals.
+// spec_type:
+// * default_spec - tests for default specifiers "{}" "{:}" "{::}",
+// * element_spec - tests for element specifiers "{::*}",
+// * outer_spec (not supported yet) - tests for outer specifiers "{:*}" "{:*:}",
+// * both_spec (not supported yet) - tests for both specifiers "{:*:*}".
 
-TEST(FormatClosedInterval, default_spec_s32)
+// single_interval, default_spec.
+
+TEST(FormatClosedInterval, single_interval_default_spec_s32)
 {
     const ClosedInterval<s32> interval { 1, 5 };
     EXPECT_EQ("[1, 5]", fmt::format("{}", interval));
     EXPECT_EQ("[1, 5]", fmt::format("{}", std::make_optional(interval)));
     EXPECT_EQ("[1, 5]", fmt::format("{}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-TEST(FormatClosedInterval, default_spec_single_value)
-{
-    const ClosedInterval<s32> interval { 42, 42 };
-    EXPECT_EQ("[42, 42]", fmt::format("{}", interval));
-    EXPECT_EQ("[42, 42]", fmt::format("{}", std::make_optional(interval)));
-    EXPECT_EQ("[42, 42]", fmt::format("{}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-TEST(FormatClosedInterval, default_spec_negative)
-{
-    const ClosedInterval<s32> interval { -3, 7 };
-    EXPECT_EQ("[-3, 7]", fmt::format("{}", interval));
-    EXPECT_EQ("[-3, 7]", fmt::format("{}", std::make_optional(interval)));
-    EXPECT_EQ("[-3, 7]", fmt::format("{}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-TEST(FormatClosedInterval, default_spec_u32)
-{
-    const ClosedInterval<u32> interval { 0, 100 };
-    EXPECT_EQ("[0, 100]", fmt::format("{}", interval));
-    EXPECT_EQ("[0, 100]", fmt::format("{}", std::make_optional(interval)));
-    EXPECT_EQ("[0, 100]", fmt::format("{}", MaybeTwoClosedIntervals<u32>(interval)));
-}
-
-// element_spec: formatting with element specifier "{::element-spec}".
-
-TEST(FormatClosedInterval, element_spec_empty)
-{
-    const ClosedInterval<s32> interval { 1, 5 };
+    EXPECT_EQ("[1, 5]", fmt::format("{:}", interval));
+    EXPECT_EQ("[1, 5]", fmt::format("{:}", std::make_optional(interval)));
+    EXPECT_EQ("[1, 5]", fmt::format("{:}", MaybeTwoClosedIntervals<s32>(interval)));
     EXPECT_EQ("[1, 5]", fmt::format("{::}", interval));
     EXPECT_EQ("[1, 5]", fmt::format("{::}", std::make_optional(interval)));
     EXPECT_EQ("[1, 5]", fmt::format("{::}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_hex)
+TEST(FormatClosedInterval, single_interval_default_spec_negative)
+{
+    const ClosedInterval<s32> interval { -3, 7 };
+    EXPECT_EQ("[-3, 7]", fmt::format("{}", interval));
+    EXPECT_EQ("[-3, 7]", fmt::format("{}", std::make_optional(interval)));
+    EXPECT_EQ("[-3, 7]", fmt::format("{}", MaybeTwoClosedIntervals<s32>(interval)));
+    EXPECT_EQ("[-3, 7]", fmt::format("{:}", interval));
+    EXPECT_EQ("[-3, 7]", fmt::format("{:}", std::make_optional(interval)));
+    EXPECT_EQ("[-3, 7]", fmt::format("{:}", MaybeTwoClosedIntervals<s32>(interval)));
+    EXPECT_EQ("[-3, 7]", fmt::format("{::}", interval));
+    EXPECT_EQ("[-3, 7]", fmt::format("{::}", std::make_optional(interval)));
+    EXPECT_EQ("[-3, 7]", fmt::format("{::}", MaybeTwoClosedIntervals<s32>(interval)));
+}
+
+TEST(FormatClosedInterval, single_interval_default_spec_u32)
+{
+    const ClosedInterval<u32> interval { 0, 100 };
+    EXPECT_EQ("[0, 100]", fmt::format("{}", interval));
+    EXPECT_EQ("[0, 100]", fmt::format("{}", std::make_optional(interval)));
+    EXPECT_EQ("[0, 100]", fmt::format("{}", MaybeTwoClosedIntervals<u32>(interval)));
+    EXPECT_EQ("[0, 100]", fmt::format("{:}", interval));
+    EXPECT_EQ("[0, 100]", fmt::format("{:}", std::make_optional(interval)));
+    EXPECT_EQ("[0, 100]", fmt::format("{:}", MaybeTwoClosedIntervals<u32>(interval)));
+    EXPECT_EQ("[0, 100]", fmt::format("{::}", interval));
+    EXPECT_EQ("[0, 100]", fmt::format("{::}", std::make_optional(interval)));
+    EXPECT_EQ("[0, 100]", fmt::format("{::}", MaybeTwoClosedIntervals<u32>(interval)));
+}
+
+// single_interval, element_spec.
+
+TEST(FormatClosedInterval, single_interval_element_spec_hex)
 {
     const ClosedInterval<s32> interval { 10, 255 };
     EXPECT_EQ("[0xa, 0xff]", fmt::format("{::#x}", interval));
@@ -64,7 +78,7 @@ TEST(FormatClosedInterval, element_spec_hex)
     EXPECT_EQ("[0xa, 0xff]", fmt::format("{::#x}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_octal)
+TEST(FormatClosedInterval, single_interval_element_spec_octal)
 {
     const ClosedInterval<s32> interval { 8, 16 };
     EXPECT_EQ("[010, 020]", fmt::format("{::#o}", interval));
@@ -72,7 +86,7 @@ TEST(FormatClosedInterval, element_spec_octal)
     EXPECT_EQ("[010, 020]", fmt::format("{::#o}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_binary)
+TEST(FormatClosedInterval, single_interval_element_spec_binary)
 {
     const ClosedInterval<s32> interval { 5, 10 };
     EXPECT_EQ("[101, 1010]", fmt::format("{::b}", interval));
@@ -80,7 +94,7 @@ TEST(FormatClosedInterval, element_spec_binary)
     EXPECT_EQ("[101, 1010]", fmt::format("{::b}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_default)
+TEST(FormatClosedInterval, single_interval_element_spec_default)
 {
     const ClosedInterval<s32> interval { 1, 5 };
     EXPECT_EQ("[1, 5]", fmt::format("{::d}", interval));
@@ -88,7 +102,7 @@ TEST(FormatClosedInterval, element_spec_default)
     EXPECT_EQ("[1, 5]", fmt::format("{::d}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_right_align)
+TEST(FormatClosedInterval, single_interval_element_spec_right_align)
 {
     const ClosedInterval<s32> interval { 1, 5 };
     EXPECT_EQ("[  1,   5]", fmt::format("{::>3}", interval));
@@ -96,7 +110,7 @@ TEST(FormatClosedInterval, element_spec_right_align)
     EXPECT_EQ("[  1,   5]", fmt::format("{::>3}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_left_align)
+TEST(FormatClosedInterval, single_interval_element_spec_left_align)
 {
     const ClosedInterval<s32> interval { 1, 5 };
     EXPECT_EQ("[1  , 5  ]", fmt::format("{::<3}", interval));
@@ -104,7 +118,7 @@ TEST(FormatClosedInterval, element_spec_left_align)
     EXPECT_EQ("[1  , 5  ]", fmt::format("{::<3}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_center_align)
+TEST(FormatClosedInterval, single_interval_element_spec_center_align)
 {
     const ClosedInterval<s32> interval { 1, 5 };
     EXPECT_EQ("[ 1 ,  5 ]", fmt::format("{::^3}", interval));
@@ -112,7 +126,7 @@ TEST(FormatClosedInterval, element_spec_center_align)
     EXPECT_EQ("[ 1 ,  5 ]", fmt::format("{::^3}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_center_align_fill)
+TEST(FormatClosedInterval, single_interval_element_spec_center_align_fill)
 {
     const ClosedInterval<s32> interval { 1, 5 };
     EXPECT_EQ("[**1**, **5**]", fmt::format("{::*^5}", interval));
@@ -120,7 +134,7 @@ TEST(FormatClosedInterval, element_spec_center_align_fill)
     EXPECT_EQ("[**1**, **5**]", fmt::format("{::*^5}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_zero_fill)
+TEST(FormatClosedInterval, single_interval_element_spec_zero_fill)
 {
     const ClosedInterval<s32> interval { 1, 5 };
     EXPECT_EQ("[001, 005]", fmt::format("{::0>3}", interval));
@@ -128,7 +142,7 @@ TEST(FormatClosedInterval, element_spec_zero_fill)
     EXPECT_EQ("[001, 005]", fmt::format("{::0>3}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_right_align_negative)
+TEST(FormatClosedInterval, single_interval_element_spec_right_align_negative)
 {
     const ClosedInterval<s32> interval { -3, -1 };
     EXPECT_EQ("[ -3,  -1]", fmt::format("{::>3}", interval));
@@ -136,7 +150,7 @@ TEST(FormatClosedInterval, element_spec_right_align_negative)
     EXPECT_EQ("[ -3,  -1]", fmt::format("{::>3}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-TEST(FormatClosedInterval, element_spec_right_align_wider)
+TEST(FormatClosedInterval, single_interval_element_spec_right_align_wider)
 {
     const ClosedInterval<s32> interval { 1, 5 };
     EXPECT_EQ("[   1,    5]", fmt::format("{::>4}", interval));
@@ -144,292 +158,132 @@ TEST(FormatClosedInterval, element_spec_right_align_wider)
     EXPECT_EQ("[   1,    5]", fmt::format("{::>4}", MaybeTwoClosedIntervals<s32>(interval)));
 }
 
-// outer_spec: formating with whole value specifier "{:outer-spec}".
-
-TEST(FormatClosedInterval, outer_spec_empty)
+TEST(FormatClosedInterval, single_interval_element_spec_dynamic_width)
 {
     const ClosedInterval<s32> interval { 1, 5 };
-    EXPECT_EQ("[1, 5]", fmt::format("{:}", interval));
-    EXPECT_EQ("[1, 5]", fmt::format("{:}", std::make_optional(interval)));
-    EXPECT_EQ("[1, 5]", fmt::format("{:}", MaybeTwoClosedIntervals<s32>(interval)));
+    EXPECT_EQ("[    1,     5]", fmt::format("{::{}}", interval, 5));
+    EXPECT_EQ("[    1,     5]", fmt::format("{::{}}", std::make_optional(interval), 5));
+    EXPECT_EQ("[    1,     5]", fmt::format("{::{}}", MaybeTwoClosedIntervals<s32>(interval), 5));
 }
 
-TEST(FormatClosedInterval, outer_spec_right_align)
+// empty_set, default_spec.
+
+TEST(FormatClosedInterval, empty_set_default_spec)
 {
-    const ClosedInterval<s32> interval { 1, 5 };
-    EXPECT_EQ("    [1, 5]", fmt::format("{:>10}", interval));
-    EXPECT_EQ("    [1, 5]", fmt::format("{:>10}", std::make_optional(interval)));
-    EXPECT_EQ("    [1, 5]", fmt::format("{:>10}", MaybeTwoClosedIntervals<s32>(interval)));
+    EXPECT_EQ("{}", fmt::format("{}", std::optional<ClosedInterval<s32>> {}));
+    EXPECT_EQ("{}", fmt::format("{}", MaybeTwoClosedIntervals<s32>()));
+    EXPECT_EQ("{}", fmt::format("{:}", std::optional<ClosedInterval<s32>> {}));
+    EXPECT_EQ("{}", fmt::format("{:}", MaybeTwoClosedIntervals<s32>()));
+    EXPECT_EQ("{}", fmt::format("{::}", std::optional<ClosedInterval<s32>> {}));
+    EXPECT_EQ("{}", fmt::format("{::}", MaybeTwoClosedIntervals<s32>()));
 }
 
-TEST(FormatClosedInterval, outer_spec_left_align)
+// empty_set, element_spec.
+
+TEST(FormatClosedInterval, empty_set_element_spec)
 {
-    const ClosedInterval<s32> interval { 1, 5 };
-    EXPECT_EQ("[1, 5]    ", fmt::format("{:<10}", interval));
-    EXPECT_EQ("[1, 5]    ", fmt::format("{:<10}", std::make_optional(interval)));
-    EXPECT_EQ("[1, 5]    ", fmt::format("{:<10}", MaybeTwoClosedIntervals<s32>(interval)));
+    EXPECT_EQ("{}", fmt::format("{::>5}", std::optional<ClosedInterval<s32>> {}));
+    EXPECT_EQ("{}", fmt::format("{::>5}", MaybeTwoClosedIntervals<s32>()));
 }
 
-TEST(FormatClosedInterval, outer_spec_center_align)
-{
-    const ClosedInterval<s32> interval { 1, 5 };
-    EXPECT_EQ("  [1, 5]  ", fmt::format("{:^10}", interval));
-    EXPECT_EQ("  [1, 5]  ", fmt::format("{:^10}", std::make_optional(interval)));
-    EXPECT_EQ("  [1, 5]  ", fmt::format("{:^10}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-TEST(FormatClosedInterval, outer_spec_center_align_fill)
-{
-    const ClosedInterval<s32> interval { 1, 5 };
-    EXPECT_EQ("**[1, 5]**", fmt::format("{:*^10}", interval));
-    EXPECT_EQ("**[1, 5]**", fmt::format("{:*^10}", std::make_optional(interval)));
-    EXPECT_EQ("**[1, 5]**", fmt::format("{:*^10}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-TEST(FormatClosedInterval, outer_spec_smaller_than_content)
-{
-    const ClosedInterval<s32> interval { 100, 200 };
-    EXPECT_EQ("[100, 200]", fmt::format("{:>5}", interval));
-    EXPECT_EQ("[100, 200]", fmt::format("{:>5}", std::make_optional(interval)));
-    EXPECT_EQ("[100, 200]", fmt::format("{:>5}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-// combined_specs: formatting with both whole value and element specifiers "{:outer-spec:element-spec}".
-
-TEST(FormatClosedInterval, combined_specs_right_align)
-{
-    const ClosedInterval<s32> interval { 1, 5 };
-    EXPECT_EQ("    [1, 5]", fmt::format("{:>10:d}", interval));
-    EXPECT_EQ("    [1, 5]", fmt::format("{:>10:d}", std::make_optional(interval)));
-    EXPECT_EQ("    [1, 5]", fmt::format("{:>10:d}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-TEST(FormatClosedInterval, combined_specs_zero_fill_hex)
-{
-    const ClosedInterval<s32> interval { 1, 15 };
-    EXPECT_EQ("00000000000000[1, f]", fmt::format("{:0>20:x}", interval));
-    EXPECT_EQ("00000000000000[1, f]", fmt::format("{:0>20:x}", std::make_optional(interval)));
-    EXPECT_EQ("00000000000000[1, f]", fmt::format("{:0>20:x}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-TEST(FormatClosedInterval, combined_specs_outer_inner_right_align)
-{
-    const ClosedInterval<s32> interval { 1, 5 };
-    EXPECT_EQ("     [  1,   5]", fmt::format("{:>15:>3}", interval));
-    EXPECT_EQ("     [  1,   5]", fmt::format("{:>15:>3}", std::make_optional(interval)));
-    EXPECT_EQ("     [  1,   5]", fmt::format("{:>15:>3}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-TEST(FormatClosedInterval, combined_specs_outer_inner_mixed)
-{
-    const ClosedInterval<s32> interval { 1, 5 };
-    EXPECT_EQ(" [  1  ,   5  ]", fmt::format("{:>15:^5}", interval));
-    EXPECT_EQ(" [  1  ,   5  ]", fmt::format("{:>15:^5}", std::make_optional(interval)));
-    EXPECT_EQ(" [  1  ,   5  ]", fmt::format("{:>15:^5}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-TEST(FormatClosedInterval, combined_specs_outer_left_inner_zero_fill)
-{
-    const ClosedInterval<s32> interval { 1, 5 };
-    EXPECT_EQ("[001, 005]     ", fmt::format("{:<15:0>3}", interval));
-    EXPECT_EQ("[001, 005]     ", fmt::format("{:<15:0>3}", std::make_optional(interval)));
-    EXPECT_EQ("[001, 005]     ", fmt::format("{:<15:0>3}", MaybeTwoClosedIntervals<s32>(interval)));
-}
-
-// empty_set: formatting an empty set represented as std::nullopt / default-constructed MaybeTwoClosedIntervals.
-
-TEST(FormatClosedInterval, empty_set_default)
-{
-    const std::optional<ClosedInterval<s32>> opt;
-    EXPECT_EQ("{}", fmt::format("{}", opt));
-    EXPECT_EQ("{}", fmt::format("{}", MaybeTwoClosedIntervals<s32> {}));
-}
-
-TEST(FormatClosedInterval, empty_set_outer_spec_empty)
-{
-    const std::optional<ClosedInterval<s32>> opt;
-    EXPECT_EQ("{}", fmt::format("{:}", opt));
-    EXPECT_EQ("{}", fmt::format("{:}", MaybeTwoClosedIntervals<s32> {}));
-}
-
-TEST(FormatClosedInterval, empty_set_outer_and_element_spec_empty)
-{
-    const std::optional<ClosedInterval<s32>> opt;
-    EXPECT_EQ("{}", fmt::format("{::}", opt));
-    EXPECT_EQ("{}", fmt::format("{::}", MaybeTwoClosedIntervals<s32> {}));
-}
-
-TEST(FormatClosedInterval, empty_set_inner_right_align)
-{
-    const std::optional<ClosedInterval<s32>> opt;
-    EXPECT_EQ("{}", fmt::format("{::>3}", opt));
-    EXPECT_EQ("{}", fmt::format("{::>3}", MaybeTwoClosedIntervals<s32> {}));
-}
-
-TEST(FormatClosedInterval, empty_set_center_align)
-{
-    const std::optional<ClosedInterval<s32>> opt;
-    EXPECT_EQ("**{}**", fmt::format("{:*^6}", opt));
-    EXPECT_EQ("**{}**", fmt::format("{:*^6}", MaybeTwoClosedIntervals<s32> {}));
-}
-
-TEST(FormatClosedInterval, empty_set_outer_and_element_spec)
-{
-    const std::optional<ClosedInterval<s32>> opt;
-    EXPECT_EQ("        {}", fmt::format("{:>10:d}", opt));
-    EXPECT_EQ("        {}", fmt::format("{:>10:d}", MaybeTwoClosedIntervals<s32> {}));
-}
-
-// two_intervals: formatting MaybeTwoClosedIntervals created via two-argument constructor.
+// two_intervals, default_spec.
 
 TEST(FormatClosedInterval, two_intervals_default_spec)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[1, 3] U [5, 8]", fmt::format("{}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 5, 8 } };
+    EXPECT_EQ("[1, 3] U [5, 8]", fmt::format("{}", intervals));
+    EXPECT_EQ("[1, 3] U [5, 8]", fmt::format("{:}", intervals));
+    EXPECT_EQ("[1, 3] U [5, 8]", fmt::format("{::}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_default_spec_u32)
 {
-    const MaybeTwoClosedIntervals<u32> mci { { 0, 10 }, { 20, 100 } };
-    EXPECT_EQ("[0, 10] U [20, 100]", fmt::format("{}", mci));
+    const MaybeTwoClosedIntervals<u32> intervals { { 0, 10 }, { 20, 100 } };
+    EXPECT_EQ("[0, 10] U [20, 100]", fmt::format("{}", intervals));
+    EXPECT_EQ("[0, 10] U [20, 100]", fmt::format("{:}", intervals));
+    EXPECT_EQ("[0, 10] U [20, 100]", fmt::format("{::}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_default_spec_negative)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { -10, -5 }, { 1, 4 } };
-    EXPECT_EQ("[-10, -5] U [1, 4]", fmt::format("{}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { -10, -5 }, { 1, 4 } };
+    EXPECT_EQ("[-10, -5] U [1, 4]", fmt::format("{}", intervals));
+    EXPECT_EQ("[-10, -5] U [1, 4]", fmt::format("{:}", intervals));
+    EXPECT_EQ("[-10, -5] U [1, 4]", fmt::format("{::}", intervals));
 }
+
+// two_intervals, element_spec.
 
 TEST(FormatClosedInterval, two_intervals_element_spec_hex)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 10, 15 }, { 32, 255 } };
-    EXPECT_EQ("[0xa, 0xf] U [0x20, 0xff]", fmt::format("{::#x}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 10, 15 }, { 32, 255 } };
+    EXPECT_EQ("[0xa, 0xf] U [0x20, 0xff]", fmt::format("{::#x}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_octal)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 8, 10 }, { 16, 20 } };
-    EXPECT_EQ("[010, 012] U [020, 024]", fmt::format("{::#o}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 8, 10 }, { 16, 20 } };
+    EXPECT_EQ("[010, 012] U [020, 024]", fmt::format("{::#o}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_binary)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 4, 6 } };
-    EXPECT_EQ("[1, 11] U [100, 110]", fmt::format("{::b}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 4, 6 } };
+    EXPECT_EQ("[1, 11] U [100, 110]", fmt::format("{::b}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_default)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[1, 3] U [5, 8]", fmt::format("{::d}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 5, 8 } };
+    EXPECT_EQ("[1, 3] U [5, 8]", fmt::format("{::d}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_right_align)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[  1,   3] U [  5,   8]", fmt::format("{::>3}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 5, 8 } };
+    EXPECT_EQ("[  1,   3] U [  5,   8]", fmt::format("{::>3}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_left_align)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[1  , 3  ] U [5  , 8  ]", fmt::format("{::<3}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 5, 8 } };
+    EXPECT_EQ("[1  , 3  ] U [5  , 8  ]", fmt::format("{::<3}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_center_align)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[ 1 ,  3 ] U [ 5 ,  8 ]", fmt::format("{::^3}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 5, 8 } };
+    EXPECT_EQ("[ 1 ,  3 ] U [ 5 ,  8 ]", fmt::format("{::^3}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_center_align_fill)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[**1**, **3**] U [**5**, **8**]", fmt::format("{::*^5}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 5, 8 } };
+    EXPECT_EQ("[**1**, **3**] U [**5**, **8**]", fmt::format("{::*^5}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_zero_fill)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[001, 003] U [005, 008]", fmt::format("{::0>3}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 5, 8 } };
+    EXPECT_EQ("[001, 003] U [005, 008]", fmt::format("{::0>3}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_right_align_negative)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { -5, -3 }, { 1, 4 } };
-    EXPECT_EQ("[ -5,  -3] U [  1,   4]", fmt::format("{::>3}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { -5, -3 }, { 1, 4 } };
+    EXPECT_EQ("[ -5,  -3] U [  1,   4]", fmt::format("{::>3}", intervals));
 }
 
 TEST(FormatClosedInterval, two_intervals_element_spec_right_align_wider)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[   1,    3] U [   5,    8]", fmt::format("{::>4}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 5, 8 } };
+    EXPECT_EQ("[   1,    3] U [   5,    8]", fmt::format("{::>4}", intervals));
 }
 
-TEST(FormatClosedInterval, two_intervals_outer_spec_empty)
+TEST(FormatClosedInterval, two_intervals_element_spec_dynamic_width)
 {
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[1, 3] U [5, 8]", fmt::format("{:}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_outer_spec_right_align)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("   [1, 3] U [5, 8]", fmt::format("{:>18}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_outer_spec_left_align)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[1, 3] U [5, 8]   ", fmt::format("{:<18}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_outer_spec_center_align)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ(" [1, 3] U [5, 8]  ", fmt::format("{:^18}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_outer_spec_center_align_fill)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("**[1, 3] U [5, 8]**", fmt::format("{:*^19}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_outer_spec_smaller_than_content)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[1, 3] U [5, 8]", fmt::format("{:>5}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_combined_specs_right_align)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("   [1, 3] U [5, 8]", fmt::format("{:>18:d}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_combined_specs_zero_fill_hex)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 15 }, { 32, 255 } };
-    EXPECT_EQ("00000000[1, f] U [20, ff]", fmt::format("{:0>25:x}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_combined_specs_outer_inner_right_align)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("   [  1,   3] U [  5,   8]", fmt::format("{:>26:>3}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_combined_specs_outer_inner_mixed)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[  1  ,   3  ] U [  5  ,   8  ]", fmt::format("{:>29:^5}", mci));
-}
-
-TEST(FormatClosedInterval, two_intervals_combined_specs_outer_left_inner_zero_fill)
-{
-    const MaybeTwoClosedIntervals<s32> mci { { 1, 3 }, { 5, 8 } };
-    EXPECT_EQ("[001, 003] U [005, 008]  ", fmt::format("{:<25:0>3}", mci));
+    const MaybeTwoClosedIntervals<s32> intervals { { 1, 3 }, { 5, 8 } };
+    EXPECT_EQ("[    1,     3] U [    5,     8]", fmt::format("{::{}}", intervals, 5));
 }
 
 } // namespace ka
