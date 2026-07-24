@@ -1,14 +1,25 @@
-/// @brief Intervals defined by two numbers on the ring.
+/// @brief Intervals over a totally ordered discrete type.
 /// @details
-/// This module contains two classes \c RingInterval and \c Interval.
-/// The set of intervals represented by the \c RingInterval
-/// is the superset of the set of intervals represented by the \c Interval.
-/// \c RingInterval is closed over set complement and not closed over set intersection.
-/// \c Interval is closed over set intersection and not closed over set complement (almost no support other than for
-/// empty and full intervals).
-/// There is no class \c ComplementInterval that would be other superset of \c RingInterval and be closed over set
+/// This module contains two classes \c Interval and \c RingInterval.
+/// Both represent subsets of the full value range [Traits::min(), Traits::max()].
+///
+/// \c Interval represents an arbitrary continuous sub-interval, including empty and full ranges.
+/// It is closed over set intersection but not over set complement.
+///
+/// \c RingInterval represents either a continuous sub-interval (like \c Interval) or the complement of one.
+/// A complement consists of two non-adjacent sub-intervals: one part including Traits::min() and the other
+/// including Traits::max().
+/// It is closed over set complement but not over set intersection.
+///
+/// The exact endpoint semantics (open vs. closed) and the internal representation are implementation details.
+/// The observable behavior of any interval is fully determined by its construction functions and its conversion
+/// to \c ClosedInterval (via to_closed_interval() or to_closed_intervals()).
+///
+/// There is no class \c ComplementInterval that would be other subset of \c RingInterval and be closed over set
 /// union. The \c ComplementInterval should be prety easy to simulate using the set complement of set intersection of
 /// \c Interval instances.
+///
+/// Implementation details:
 ///
 /// Let T be a totally ordered type with discrete values, that includes its infimum (min) and supremum (max) values.
 /// Such as fixed-width integer types or floating-points types without negative zero and NaNs.
@@ -16,38 +27,39 @@
 /// We can define several cases:
 /// * first < last: naturaly this case represents half-open interval [first, last);
 /// * first > last: can be used to represent complement of any half-open interval which is [min, last) U [first, max].
-/// * first == last: any of these values can represent either empty or full set, we choose first=last=min to represent
-/// the empty set, and first=last=max to represent the full set. This seems to allow better use of modular arithmetics.
-///
-/// @note All these special values are considered implementation detail. All public interfaces should treat the case
-/// first=last as an empty set, like most C++ libraries do.
+/// * first == last: any of these values can represent either empty or full set, we choose
+/// first = last = max to represent the empty set, and
+/// first = last = min to represent the full set.
+/// This seems to allow better use of modular arithmetics.
+/// All these special values are considered implementation detail. All public interfaces should treat the case
+/// first = last as an empty set, like most C++ libraries do.
 
 #pragma once
 
 #include <concepts>
 #include <limits>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
 #include <ka/common/assert.hpp>
+#include <ka/common/closed_interval.hpp>
 #include <ka/common/interval_traits.hpp>
 
 namespace ka
 {
 
-/// @brief A half-open interval over a totally ordered type T, with cyclic (wrap‑around) order semantics.
+template <typename T, IntervalValueTraitsFor<T> Traits>
+class Interval;
+
+/// @brief A subset of [Traits::min(), Traits::max()], either continuous sub-interval or its complement.
 /// @note Set complement is closed over the type.
-/// @details
-/// The interval can be in one of four forms:
-/// * Normal (first < last): half-open interval [first, last).
-/// * Empty: empty set
-/// * Full: full range of values [Traits::min(), Traits::max()]
-/// * Discontinuous (first > last): [Traits::min(), last) U [first, Traits::max()) which is the complement of a
-/// half-open interval.
 template <typename T, IntervalValueTraitsFor<T> Traits = IntervalValueTraits<T>>
 class RingInterval final
 {
     using Utils = IntervalValueUtils<T, Traits>;
+
+    friend class Interval<T, Traits>;
 
 private:
     constexpr RingInterval(const T & first, const T & last) noexcept
@@ -70,39 +82,34 @@ public:
     constexpr RingInterval(RingInterval &&) noexcept = default;
     constexpr RingInterval & operator=(RingInterval &&) noexcept = default;
 
+    /// @brief Returns true if two ring intervals are equal.
+    [[nodiscard]] constexpr bool operator==(const RingInterval & other) const noexcept
+    {
+        return Utils::equal(first_, other.first_) && Utils::equal(last_, other.last_);
+    }
+
+    /// @brief Returns true if two ring intervals are not equal.
+    [[nodiscard]] constexpr bool operator!=(const RingInterval & other) const noexcept
+    {
+        return !(*this == other);
+    }
+
 public:
-    /// @brief Returns the inclusive left endpoint of the half-open interval.
-    /// @note Structured binding is also supported.
-    [[nodiscard]] constexpr const T & first() const noexcept
-    {
-        KA_PRE(valid());
-        return first_;
-    }
-
-    /// @brief Returns the exclusive right endpoint of the half-open interval.
-    /// @note Structured binding is also supported.
-    [[nodiscard]] constexpr const T & last() const noexcept
-    {
-        KA_PRE(valid());
-        return last_;
-    }
-
     /// @brief Returns true if the interval is empty.
     [[nodiscard]] constexpr bool empty() const noexcept
     {
         KA_PRE(valid());
-        return Utils::equal(first_, last_) && Utils::equal(first_, Utils::min());
+        return Utils::equal(first_, last_) && Utils::equal(first_, Utils::max());
     }
 
     /// @brief Returns true if the interval contains all possible values.
     [[nodiscard]] constexpr bool full() const noexcept
     {
         KA_PRE(valid());
-        return Utils::equal(first_, last_) && !Utils::equal(first_, Utils::min());
+        return Utils::equal(first_, last_) && !Utils::equal(first_, Utils::max());
     }
 
-    /// @brief Returns true if has the form [first, last), including full and empty,
-    /// and false if it has the form [Traits::min(), last) U [first, Traits::max()]
+    /// @brief Returns true if the interval is a single continuous range (including empty and full).
     [[nodiscard]] constexpr bool continuous() const noexcept
     {
         KA_PRE(valid());
@@ -123,8 +130,8 @@ public:
         {
             return Utils::less(value, last_) || Utils::less_or_equal(first_, value);
         }
-        // When all values are valid this line is equivalent to first_ != min (full range).
-        return Utils::less(Utils::min(), first_);
+        // When all values are valid this line is equivalent to first_ == min (full range).
+        return !Utils::less(Utils::min(), first_);
     }
 
     [[nodiscard]] constexpr auto size() const noexcept
@@ -145,6 +152,53 @@ public:
         return Utils::distance(Utils::min(), last_) + Utils::distance(first_, Utils::max()) + 1;
     }
 
+    /// @brief Converts the ring interval to zero, one or two closed intervals.
+    /// @details
+    /// Empty interval converts to an empty set (zero intervals).
+    /// Full interval and continuous non-empty intervals convert to a single closed interval.
+    /// Two-interval form converts to two closed intervals.
+    [[nodiscard]] constexpr MaybeTwoClosedIntervals<T, Traits> to_closed_intervals() const noexcept
+    {
+        KA_PRE(valid());
+        const auto cmp = Utils::cmp(first_, last_);
+        if (cmp < 0)
+        {
+            // Normal: [first, last) -> [first, last-1].
+            return MaybeTwoClosedIntervals(ClosedInterval<T, Traits>(first_, Utils::prev(last_)));
+        }
+        if (cmp > 0)
+        {
+            // Discontinuous: [min, last) U [first, max].
+            const auto right = ClosedInterval<T, Traits>(first_, Utils::max());
+            if (Utils::equal(last_, Utils::min()))
+            {
+                // Left part is empty.
+                return MaybeTwoClosedIntervals<T, Traits>(right);
+            }
+            // Left part: [min, last) -> [min, last-1].
+            const auto left = ClosedInterval<T, Traits>(Utils::min(), Utils::prev(last_));
+            return MaybeTwoClosedIntervals<T, Traits>(left, right);
+        }
+        if (empty())
+        {
+            return MaybeTwoClosedIntervals<T, Traits>();
+        }
+        return MaybeTwoClosedIntervals(ClosedInterval<T, Traits>(Utils::min(), Utils::max()));
+    }
+
+    /// @brief Converts this ring interval to a single interval if possible.
+    /// @details Returns std::nullopt when the ring interval is discontinuous.
+    [[nodiscard]] constexpr std::optional<Interval<T, Traits>> to_interval() const noexcept
+    {
+        KA_PRE(valid());
+        if (continuous())
+        {
+            return Interval<T, Traits>(first_, last_);
+        }
+        return std::nullopt;
+    }
+
+    /// @brief Returns the complement of this interval.
     [[nodiscard]] constexpr RingInterval complement() const noexcept
     {
         KA_PRE(valid());
@@ -174,6 +228,8 @@ public:
     /// @pre first <= last
     [[nodiscard]] static constexpr RingInterval make_half_open(const T & first, const T & last) noexcept
     {
+        KA_PRE(Utils::value_is_valid(first));
+        KA_PRE(Utils::value_is_valid(last));
         KA_PRE(Utils::less_or_equal(first, last));
         if (Utils::equal(first, last))
         {
@@ -187,12 +243,30 @@ public:
     /// @pre first <= last
     [[nodiscard]] static constexpr RingInterval make_half_open_complement(const T & first, const T & last) noexcept
     {
+        KA_PRE(Utils::value_is_valid(first));
+        KA_PRE(Utils::value_is_valid(last));
         KA_PRE(Utils::less_or_equal(first, last));
         if (Utils::equal(first, last))
         {
             return make_full();
         }
         return RingInterval(last, first);
+    }
+
+    /// @brief Returns a closed interval [first, last].
+    /// @pre first <= last
+    [[nodiscard]] static constexpr RingInterval make_closed(const T & first, const T & last) noexcept
+    {
+        KA_PRE(Utils::value_is_valid(first));
+        KA_PRE(Utils::value_is_valid(last));
+        KA_PRE(Utils::less_or_equal(first, last));
+        return RingInterval(first, Utils::next_wrap(last));
+    }
+
+    /// @brief Returns a closed interval from a ClosedInterval.
+    [[nodiscard]] static constexpr RingInterval make_closed(const ClosedInterval<T, Traits> & interval) noexcept
+    {
+        return make_closed(interval.first(), interval.last());
     }
 
     /// @brief Returns an interval of all values strictly less than value.
@@ -274,17 +348,14 @@ private:
     T last_;
 };
 
-/// @brief A half-open interval [first, last) over a totally ordered type T.
+/// @brief An arbitrary continuous sub-interval of [Traits::min(), Traits::max()].
 /// @note Set intersection is closed over the type.
-/// @details
-/// The interval can be in one of three forms:
-/// * Normal (first < last): half-open interval [first, last).
-/// * Empty: empty set
-/// * Full: full range of values [Traits::min(), Traits::max()]
 template <typename T, IntervalValueTraitsFor<T> Traits = IntervalValueTraits<T>>
 class Interval final
 {
     using Utils = IntervalValueUtils<T, Traits>;
+
+    friend class RingInterval<T, Traits>;
 
 private:
     constexpr Interval(const T & first, const T & last) noexcept
@@ -297,7 +368,7 @@ private:
 public:
     /// @brief Constructs empty interval.
     constexpr Interval() noexcept
-        : Interval(Utils::min(), Utils::min())
+        : Interval(Utils::max(), Utils::max())
     {
         KA_PRE(valid());
     }
@@ -307,48 +378,84 @@ public:
     constexpr Interval(Interval &&) noexcept = default;
     constexpr Interval & operator=(Interval &&) noexcept = default;
 
+    /// @brief Returns true if two intervals are equal.
+    [[nodiscard]] constexpr bool operator==(const Interval & other) const noexcept
+    {
+        return Utils::equal(first_, other.first_) && Utils::equal(last_, other.last_);
+    }
+
+    /// @brief Returns true if two intervals are not equal.
+    [[nodiscard]] constexpr bool operator!=(const Interval & other) const noexcept
+    {
+        return !(*this == other);
+    }
+
 public:
-    /// @brief Returns the inclusive left endpoint of the half-open interval.
-    /// @note Structured binding is also supported.
-    [[nodiscard]] constexpr const T & first() const noexcept
-    {
-        KA_PRE(valid());
-        return first_;
-    }
-
-    /// @brief Returns the exclusive right endpoint of the half-open interval.
-    /// @note Structured binding is also supported.
-    [[nodiscard]] constexpr const T & last() const noexcept
-    {
-        KA_PRE(valid());
-        return last_;
-    }
-
     /// @brief Returns true if the interval is empty.
     [[nodiscard]] constexpr bool empty() const noexcept
     {
         KA_PRE(valid());
-        return Utils::equal(first_, last_) && Utils::equal(first_, Utils::min());
+        return Utils::equal(first_, last_) && Utils::equal(first_, Utils::max());
     }
 
     /// @brief Returns true if the interval contains all possible values.
     [[nodiscard]] constexpr bool full() const noexcept
     {
         KA_PRE(valid());
-        return Utils::equal(first_, last_) && !Utils::equal(first_, Utils::min());
+        return Utils::equal(first_, last_) && !Utils::equal(first_, Utils::max());
     }
 
     [[nodiscard]] constexpr bool contains(const T & value) const noexcept
     {
         KA_PRE(valid());
-        return Utils::less_or_equal(first_, value) && Utils::less(value, last_);
+        KA_PRE(Utils::value_is_valid(value));
+        if (Utils::greater(first_, value))
+        {
+            return false;
+        }
+        return Utils::equal(last_, Utils::min()) || Utils::less(value, last_);
     }
 
     [[nodiscard]] constexpr auto size() const noexcept
         requires SizedIntervalValueTraitsFor<Traits, T>
     {
         KA_PRE(valid());
-        return Utils::distance(first_, last_);
+        if (empty())
+        {
+            return IntervalValueTraitsSizeType<Traits> {};
+        }
+        if (full())
+        {
+            return Utils::distance(Utils::min(), Utils::max()) + IntervalValueTraitsSizeType<Traits> { 1 };
+        }
+        if (Utils::less(first_, last_))
+        {
+            return Utils::distance(first_, last_);
+        }
+        // Max-inclusive: [first, Traits::max()].
+        return Utils::distance(first_, Utils::max()) + IntervalValueTraitsSizeType<Traits> { 1 };
+    }
+
+    /// @brief Converts the interval to a closed interval.
+    /// @details
+    /// Empty interval converts to std::nullopt.
+    /// Non-empty intervals convert to a single closed interval covering the same values.
+    [[nodiscard]] constexpr std::optional<ClosedInterval<T, Traits>> to_closed_interval() const noexcept
+    {
+        KA_PRE(valid());
+        if (empty())
+        {
+            return std::nullopt;
+        }
+        return ClosedInterval<T, Traits>(first_, Utils::prev_wrap(last_));
+    }
+
+    /// @brief Converts this interval to a ring interval.
+    /// @details The internal representation is identical, so this is a trivial copy.
+    [[nodiscard]] constexpr RingInterval<T, Traits> to_ring_interval() const noexcept
+    {
+        KA_PRE(valid());
+        return RingInterval<T, Traits>(first_, last_);
     }
 
     /// @brief Returns an empty interval.
@@ -368,7 +475,9 @@ public:
     /// @pre first <= last
     [[nodiscard]] static constexpr Interval make_half_open(const T & first, const T & last) noexcept
     {
-        KA_PRE(Utils::less_or_greater(first, last));
+        KA_PRE(Utils::value_is_valid(first));
+        KA_PRE(Utils::value_is_valid(last));
+        KA_PRE(Utils::less_or_equal(first, last));
         if (Utils::equal(first, last))
         {
             return make_empty();
@@ -376,49 +485,63 @@ public:
         return Interval(first, last);
     }
 
+    /// @brief Returns a closed interval [first, last].
+    /// @pre first <= last
+    [[nodiscard]] static constexpr Interval make_closed(const T & first, const T & last) noexcept
+    {
+        KA_PRE(Utils::value_is_valid(first));
+        KA_PRE(Utils::value_is_valid(last));
+        KA_PRE(Utils::less_or_equal(first, last));
+        return Interval(first, Utils::next_wrap(last));
+    }
+
+    /// @brief Returns a closed interval from a ClosedInterval.
+    [[nodiscard]] static constexpr Interval make_closed(const ClosedInterval<T, Traits> & interval) noexcept
+    {
+        return make_closed(interval.first(), interval.last());
+    }
+
     /// @brief Returns an interval of all values strictly less than value.
     [[nodiscard]] static constexpr Interval make_less(const T & value) noexcept
     {
-        // Empty range is handled naturaly.
-        return Interval(Utils::min(), value);
+        KA_PRE(Utils::value_is_valid(value));
+        if (Utils::less(Utils::min(), value))
+        {
+            return Interval(Utils::min(), value);
+        }
+        return make_empty();
     }
 
     /// @brief Returns an interval of all values less than or equal to value.
     [[nodiscard]] static constexpr Interval make_less_or_equal(const T & value) noexcept
     {
-        if (Utils::equal(value, Utils::max()))
-        {
-            return make_full();
-        }
-        return Interval(Utils::min(), Utils::next(value));
+        KA_PRE(Utils::value_is_valid(value));
+        return Interval(Utils::min(), Utils::next_wrap(value));
     }
 
     /// @brief Returns an interval containing only value.
     [[nodiscard]] static constexpr Interval make_equal(const T & value) noexcept
     {
-        // TODO: Fix value == max().
-        return Interval(value, Utils::next(value));
+        KA_PRE(Utils::value_is_valid(value));
+        return Interval(value, Utils::next_wrap(value));
     }
 
     /// @brief Returns an interval of all values greater than or equal to value.
-    /// @note When value == Traits::min(), returns full. For other values, max() is excluded from the result.
     [[nodiscard]] static constexpr Interval make_greater_or_equal(const T & value) noexcept
     {
-        if (Utils::equal(value, Utils::min()))
-        {
-            return make_full();
-        }
-        return Interval(value, Utils::max());
+        KA_PRE(Utils::value_is_valid(value));
+        return Interval(value, Utils::min());
     }
 
     /// @brief Returns an interval of all values strictly greater than value.
     [[nodiscard]] static constexpr Interval make_greater(const T & value) noexcept
     {
+        KA_PRE(Utils::value_is_valid(value));
         if (Utils::equal(value, Utils::max()))
         {
             return make_empty();
         }
-        return Interval(Utils::next(value), Utils::max());
+        return Interval(Utils::next(value), Utils::min());
     }
 
 private:
@@ -435,7 +558,8 @@ private:
         }
         if (!Utils::less_or_equal(first_, last_))
         {
-            return false;
+            // Max-inclusive: first > last only allowed when last == min.
+            return Utils::equal(last_, Utils::min());
         }
         if (!Utils::equal(first_, last_))
         {
@@ -446,63 +570,38 @@ private:
 
 private:
     // Special ranges encoded with first_ == last_.
-    // Empty: first == last == Traits::min()
-    // Full: first == last == Traits::max()
+    // Empty: first == last == Traits::max()
+    // Full: first == last == Traits::min()
     T first_;
     T last_;
 };
 
+/// @brief Returns true if a ring interval and an interval are equal.
+template <typename T, IntervalValueTraitsFor<T> Traits>
+[[nodiscard]] constexpr bool operator==(const RingInterval<T, Traits> & lhs, const Interval<T, Traits> & rhs) noexcept
+{
+    return lhs == rhs.to_ring_interval();
+}
+
+/// @brief Returns true if a ring interval and an interval are not equal.
+template <typename T, IntervalValueTraitsFor<T> Traits>
+[[nodiscard]] constexpr bool operator!=(const RingInterval<T, Traits> & lhs, const Interval<T, Traits> & rhs) noexcept
+{
+    return !(lhs == rhs);
+}
+
+/// @brief Returns true if an interval and a ring interval are equal.
+template <typename T, IntervalValueTraitsFor<T> Traits>
+[[nodiscard]] constexpr bool operator==(const Interval<T, Traits> & lhs, const RingInterval<T, Traits> & rhs) noexcept
+{
+    return lhs.to_ring_interval() == rhs;
+}
+
+/// @brief Returns true if an interval and a ring interval are not equal.
+template <typename T, IntervalValueTraitsFor<T> Traits>
+[[nodiscard]] constexpr bool operator!=(const Interval<T, Traits> & lhs, const RingInterval<T, Traits> & rhs) noexcept
+{
+    return !(lhs == rhs);
+}
+
 } // namespace ka
-
-namespace std
-{
-
-template <typename T, ::ka::IntervalValueTraitsFor<T> Traits>
-struct tuple_size<::ka::Interval<T, Traits>> : ::std::integral_constant<size_t, 2>
-{
-};
-
-template <size_t I, typename T, ::ka::IntervalValueTraitsFor<T> Traits>
-struct tuple_element<I, ::ka::Interval<T, Traits>> : ::std::tuple_element<I, ::std::pair<T, T>>
-{
-};
-
-template <size_t I, typename T, ::ka::IntervalValueTraitsFor<T> Traits>
-const std::tuple_element_t<I, ::ka::Interval<T, Traits>> & get(const ::ka::Interval<T, Traits> & interval)
-{
-    static_assert(I < 2);
-    if constexpr (I == 0)
-    {
-        return interval.first();
-    }
-    if constexpr (I == 1)
-    {
-        return interval.last();
-    }
-};
-
-template <typename T, ::ka::IntervalValueTraitsFor<T> Traits>
-struct tuple_size<::ka::RingInterval<T, Traits>> : ::std::integral_constant<size_t, 2>
-{
-};
-
-template <size_t I, typename T, ::ka::IntervalValueTraitsFor<T> Traits>
-struct tuple_element<I, ::ka::RingInterval<T, Traits>> : ::std::tuple_element<I, ::std::pair<T, T>>
-{
-};
-
-template <size_t I, typename T, ::ka::IntervalValueTraitsFor<T> Traits>
-const std::tuple_element_t<I, ::ka::RingInterval<T, Traits>> & get(const ::ka::RingInterval<T, Traits> & interval)
-{
-    static_assert(I < 2);
-    if constexpr (I == 0)
-    {
-        return interval.first();
-    }
-    if constexpr (I == 1)
-    {
-        return interval.last();
-    }
-};
-
-} // namespace std
