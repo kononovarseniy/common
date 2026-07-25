@@ -9,6 +9,7 @@
 
 #include <ka/common/closed_interval.hpp>
 #include <ka/common/fixed.hpp>
+#include <ka/common/hash.hpp>
 #include <ka/common/interval.hpp>
 #include <ka/common/interval_traits.hpp>
 
@@ -2038,6 +2039,30 @@ TEST(RingIntervalEquality, not_equal_greater_or_equal_vs_less)
     EXPECT_TRUE(a != b);
 }
 
+// RingInterval hashing
+
+TEST(RingIntervalHashTest, equal_intervals_have_equal_hashes)
+{
+    const auto a = RingInterval<s32>::make_half_open(5, 10);
+    const auto b = RingInterval<s32>::make_half_open(5, 10);
+    Hasher hash_a;
+    hash_a.update(a);
+    Hasher hash_b;
+    hash_b.update(b);
+    EXPECT_EQ(hash_a.digest(), hash_b.digest());
+}
+
+TEST(RingIntervalHashTest, different_intervals_have_different_hashes)
+{
+    const auto a = RingInterval<s32>::make_half_open(5, 10);
+    const auto b = RingInterval<s32>::make_half_open(6, 10);
+    Hasher hash_a;
+    hash_a.update(a);
+    Hasher hash_b;
+    hash_b.update(b);
+    EXPECT_NE(hash_a.digest(), hash_b.digest());
+}
+
 // Interval equality operators
 
 TEST(IntervalEquality, equal_empty)
@@ -2118,6 +2143,30 @@ TEST(IntervalEquality, not_equal_greater_or_equal_vs_less)
     const auto b = Interval<s32>::make_less(5);
     EXPECT_FALSE(a == b);
     EXPECT_TRUE(a != b);
+}
+
+// Interval hashing
+
+TEST(IntervalHashTest, equal_intervals_have_equal_hashes)
+{
+    const auto a = Interval<s32>::make_half_open(5, 10);
+    const auto b = Interval<s32>::make_half_open(5, 10);
+    Hasher hash_a;
+    hash_a.update(a);
+    Hasher hash_b;
+    hash_b.update(b);
+    EXPECT_EQ(hash_a.digest(), hash_b.digest());
+}
+
+TEST(IntervalHashTest, different_intervals_have_different_hashes)
+{
+    const auto a = Interval<s32>::make_half_open(5, 10);
+    const auto b = Interval<s32>::make_half_open(6, 10);
+    Hasher hash_a;
+    hash_a.update(a);
+    Hasher hash_b;
+    hash_b.update(b);
+    EXPECT_NE(hash_a.digest(), hash_b.digest());
 }
 
 // Cross-type equality: RingInterval vs Interval

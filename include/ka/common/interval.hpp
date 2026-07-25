@@ -44,6 +44,7 @@
 
 #include <ka/common/assert.hpp>
 #include <ka/common/closed_interval.hpp>
+#include <ka/common/hash.hpp>
 #include <ka/common/interval_traits.hpp>
 
 namespace ka
@@ -92,6 +93,14 @@ public:
     [[nodiscard]] constexpr bool operator!=(const RingInterval & other) const noexcept
     {
         return !(*this == other);
+    }
+
+    /// @brief Feeds the interval into the hasher.
+    void hash(Hasher & hasher) const noexcept
+    {
+        KA_ASSERT(valid());
+        hasher.update(first_);
+        hasher.update(last_);
     }
 
 public:
@@ -402,6 +411,14 @@ public:
     [[nodiscard]] constexpr bool operator!=(const Interval & other) const noexcept
     {
         return !(*this == other);
+    }
+
+    /// @brief Feeds the interval into the hasher.
+    void hash(Hasher & hasher) const noexcept
+    {
+        KA_ASSERT(valid());
+        hasher.update(first_);
+        hasher.update(last_);
     }
 
 public:
