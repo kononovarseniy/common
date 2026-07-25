@@ -1622,6 +1622,201 @@ TEST(IntervalTest, to_closed_interval_greater_or_equal_min)
     EXPECT_EQ(std::numeric_limits<s32>::max(), result->last());
 }
 
+// Interval::intersect
+
+TEST(IntervalTest, intersect_empty_with_empty)
+{
+    const Interval<s32> a;
+    const Interval<s32> b;
+    const auto result = a.intersect(b);
+    EXPECT_TRUE(result.empty());
+}
+
+TEST(IntervalTest, intersect_empty_with_full)
+{
+    const Interval<s32> empty;
+    const auto full = Interval<s32>::make_full();
+    const auto result = empty.intersect(full);
+    EXPECT_TRUE(result.empty());
+}
+
+TEST(IntervalTest, intersect_full_with_empty)
+{
+    const auto full = Interval<s32>::make_full();
+    const Interval<s32> empty;
+    const auto result = full.intersect(empty);
+    EXPECT_TRUE(result.empty());
+}
+
+TEST(IntervalTest, intersect_full_with_full)
+{
+    const auto a = Interval<s32>::make_full();
+    const auto b = Interval<s32>::make_full();
+    const auto result = a.intersect(b);
+    EXPECT_TRUE(result.full());
+}
+
+TEST(IntervalTest, intersect_identical_normal)
+{
+    const auto a = Interval<s32>::make_half_open(5, 10);
+    const auto b = Interval<s32>::make_half_open(5, 10);
+    const auto result = a.intersect(b);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(5, closed->first());
+    EXPECT_EQ(9, closed->last());
+}
+
+TEST(IntervalTest, intersect_identical_single_value)
+{
+    const auto a = Interval<s32>::make_equal(42);
+    const auto b = Interval<s32>::make_equal(42);
+    const auto result = a.intersect(b);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(42, closed->first());
+    EXPECT_EQ(42, closed->last());
+}
+
+TEST(IntervalTest, intersect_overlapping_partial)
+{
+    const auto a = Interval<s32>::make_half_open(5, 10);
+    const auto b = Interval<s32>::make_half_open(8, 15);
+    const auto result = a.intersect(b);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(8, closed->first());
+    EXPECT_EQ(9, closed->last());
+}
+
+TEST(IntervalTest, intersect_overlapping_symmetric)
+{
+    const auto a = Interval<s32>::make_half_open(8, 15);
+    const auto b = Interval<s32>::make_half_open(5, 10);
+    const auto result = a.intersect(b);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(8, closed->first());
+    EXPECT_EQ(9, closed->last());
+}
+
+TEST(IntervalTest, intersect_disjoint_left_before_right)
+{
+    const auto a = Interval<s32>::make_half_open(1, 5);
+    const auto b = Interval<s32>::make_half_open(10, 20);
+    const auto result = a.intersect(b);
+    EXPECT_TRUE(result.empty());
+}
+
+TEST(IntervalTest, intersect_disjoint_right_before_left)
+{
+    const auto a = Interval<s32>::make_half_open(10, 20);
+    const auto b = Interval<s32>::make_half_open(1, 5);
+    const auto result = a.intersect(b);
+    EXPECT_TRUE(result.empty());
+}
+
+TEST(IntervalTest, intersect_touching_at_boundary)
+{
+    const auto a = Interval<s32>::make_half_open(1, 5);
+    const auto b = Interval<s32>::make_half_open(5, 10);
+    const auto result = a.intersect(b);
+    EXPECT_TRUE(result.empty());
+}
+
+TEST(IntervalTest, intersect_one_contains_other)
+{
+    const auto outer = Interval<s32>::make_half_open(1, 20);
+    const auto inner = Interval<s32>::make_half_open(5, 10);
+    const auto result = outer.intersect(inner);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(5, closed->first());
+    EXPECT_EQ(9, closed->last());
+}
+
+TEST(IntervalTest, intersect_full_with_normal)
+{
+    const auto full = Interval<s32>::make_full();
+    const auto normal = Interval<s32>::make_half_open(5, 10);
+    const auto result = full.intersect(normal);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(5, closed->first());
+    EXPECT_EQ(9, closed->last());
+}
+
+TEST(IntervalTest, intersect_normal_with_full)
+{
+    const auto normal = Interval<s32>::make_half_open(5, 10);
+    const auto full = Interval<s32>::make_full();
+    const auto result = normal.intersect(full);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(5, closed->first());
+    EXPECT_EQ(9, closed->last());
+}
+
+TEST(IntervalTest, intersect_less_with_greater_or_equal)
+{
+    const auto less = Interval<s32>::make_less(10);
+    const auto ge = Interval<s32>::make_greater_or_equal(5);
+    const auto result = less.intersect(ge);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(5, closed->first());
+    EXPECT_EQ(9, closed->last());
+}
+
+TEST(IntervalTest, intersect_disjoint_less_and_greater)
+{
+    const auto less = Interval<s32>::make_less(5);
+    const auto greater = Interval<s32>::make_greater(10);
+    const auto result = less.intersect(greater);
+    EXPECT_TRUE(result.empty());
+}
+
+TEST(IntervalTest, intersect_single_value_in_range)
+{
+    const auto range = Interval<s32>::make_half_open(1, 10);
+    const auto single = Interval<s32>::make_equal(5);
+    const auto result = range.intersect(single);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(5, closed->first());
+    EXPECT_EQ(5, closed->last());
+}
+
+TEST(IntervalTest, intersect_single_value_out_of_range)
+{
+    const auto range = Interval<s32>::make_half_open(1, 10);
+    const auto single = Interval<s32>::make_equal(15);
+    const auto result = range.intersect(single);
+    EXPECT_TRUE(result.empty());
+}
+
+TEST(IntervalTest, intersect_at_max_boundary)
+{
+    const auto a = Interval<s32>::make_greater_or_equal(std::numeric_limits<s32>::max() - 2);
+    const auto b = Interval<s32>::make_greater_or_equal(std::numeric_limits<s32>::max() - 1);
+    const auto result = a.intersect(b);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(std::numeric_limits<s32>::max() - 1, closed->first());
+    EXPECT_EQ(std::numeric_limits<s32>::max(), closed->last());
+}
+
+TEST(IntervalTest, intersect_at_min_boundary)
+{
+    const auto a = Interval<s32>::make_less(std::numeric_limits<s32>::min() + 3);
+    const auto b = Interval<s32>::make_less(std::numeric_limits<s32>::min() + 2);
+    const auto result = a.intersect(b);
+    const auto closed = result.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(std::numeric_limits<s32>::min(), closed->first());
+    EXPECT_EQ(std::numeric_limits<s32>::min() + 1, closed->last());
+}
+
 // Interval with custom traits combinations
 
 TEST(IntervalTest, less_only_traits)

@@ -489,6 +489,26 @@ public:
         return RingInterval<T, Traits>(first_, last_);
     }
 
+    /// @brief Returns the intersection of this interval with another.
+    [[nodiscard]] constexpr Interval intersect(const Interval & other) const noexcept
+    {
+        KA_PRE(valid());
+        KA_PRE(other.valid());
+        const auto this_ci = to_closed_interval();
+        const auto other_ci = other.to_closed_interval();
+        if (!this_ci.has_value() || !other_ci.has_value())
+        {
+            return make_empty();
+        }
+        const T start = Utils::greater_or_equal(this_ci->first(), other_ci->first()) ? this_ci->first() : other_ci->first();
+        const T end = Utils::less_or_equal(this_ci->last(), other_ci->last()) ? this_ci->last() : other_ci->last();
+        if (Utils::greater(start, end))
+        {
+            return make_empty();
+        }
+        return make_closed(start, end);
+    }
+
     /// @brief Returns an empty interval.
     [[nodiscard]] static constexpr Interval make_empty() noexcept
     {
