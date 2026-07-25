@@ -876,6 +876,115 @@ TEST(RingIntervalTest, to_closed_intervals_complement_of_single_value)
     EXPECT_EQ(std::numeric_limits<s32>::max(), it->last());
 }
 
+// RingInterval to_intervals
+
+TEST(RingIntervalTest, to_intervals_empty)
+{
+    const RingInterval<s32> interval;
+    const auto [left, right] = interval.to_intervals();
+    EXPECT_TRUE(left.empty());
+    EXPECT_TRUE(right.empty());
+}
+
+TEST(RingIntervalTest, to_intervals_full)
+{
+    const auto interval = RingInterval<s32>::make_full();
+    const auto [left, right] = interval.to_intervals();
+    EXPECT_TRUE(left.full());
+    EXPECT_FALSE(left.empty());
+    EXPECT_TRUE(right.empty());
+}
+
+TEST(RingIntervalTest, to_intervals_normal)
+{
+    const auto interval = RingInterval<s32>::make_half_open(5, 10);
+    const auto [left, right] = interval.to_intervals();
+    const auto closed = left.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(5, closed->first());
+    EXPECT_EQ(9, closed->last());
+    EXPECT_TRUE(right.empty());
+}
+
+TEST(RingIntervalTest, to_intervals_single_value)
+{
+    const auto interval = RingInterval<s32>::make_equal(42);
+    const auto [left, right] = interval.to_intervals();
+    const auto closed = left.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(42, closed->first());
+    EXPECT_EQ(42, closed->last());
+    EXPECT_TRUE(right.empty());
+}
+
+TEST(RingIntervalTest, to_intervals_less)
+{
+    const auto interval = RingInterval<s32>::make_less(5);
+    const auto [left, right] = interval.to_intervals();
+    const auto closed = left.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(std::numeric_limits<s32>::min(), closed->first());
+    EXPECT_EQ(4, closed->last());
+    EXPECT_TRUE(right.empty());
+}
+
+TEST(RingIntervalTest, to_intervals_greater_or_equal)
+{
+    const auto interval = RingInterval<s32>::make_greater_or_equal(5);
+    const auto [left, right] = interval.to_intervals();
+    const auto closed = left.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(5, closed->first());
+    EXPECT_EQ(std::numeric_limits<s32>::max(), closed->last());
+    EXPECT_TRUE(right.empty());
+}
+
+TEST(RingIntervalTest, to_intervals_discontinuous_two_parts)
+{
+    // make_half_open_complement(5, 10) = complement of [5, 10) = [min, 5) U [10, max]
+    const auto interval = RingInterval<s32>::make_half_open_complement(5, 10);
+    const auto [left, right] = interval.to_intervals();
+    EXPECT_FALSE(left.empty());
+    EXPECT_FALSE(right.empty());
+    const auto left_closed = left.to_closed_interval();
+    ASSERT_TRUE(left_closed.has_value());
+    EXPECT_EQ(std::numeric_limits<s32>::min(), left_closed->first());
+    EXPECT_EQ(4, left_closed->last());
+    const auto right_closed = right.to_closed_interval();
+    ASSERT_TRUE(right_closed.has_value());
+    EXPECT_EQ(10, right_closed->first());
+    EXPECT_EQ(std::numeric_limits<s32>::max(), right_closed->last());
+}
+
+TEST(RingIntervalTest, to_intervals_not_equal)
+{
+    // make_not_equal(42) = complement of {42} = [min, 42) U [43, max]
+    const auto interval = RingInterval<s32>::make_not_equal(42);
+    const auto [left, right] = interval.to_intervals();
+    EXPECT_FALSE(left.empty());
+    EXPECT_FALSE(right.empty());
+    const auto left_closed = left.to_closed_interval();
+    ASSERT_TRUE(left_closed.has_value());
+    EXPECT_EQ(std::numeric_limits<s32>::min(), left_closed->first());
+    EXPECT_EQ(41, left_closed->last());
+    const auto right_closed = right.to_closed_interval();
+    ASSERT_TRUE(right_closed.has_value());
+    EXPECT_EQ(43, right_closed->first());
+    EXPECT_EQ(std::numeric_limits<s32>::max(), right_closed->last());
+}
+
+TEST(RingIntervalTest, to_intervals_normal_min_to_max_minus_1)
+{
+    const auto interval =
+        RingInterval<s32>::make_half_open(std::numeric_limits<s32>::min(), std::numeric_limits<s32>::max());
+    const auto [left, right] = interval.to_intervals();
+    const auto closed = left.to_closed_interval();
+    ASSERT_TRUE(closed.has_value());
+    EXPECT_EQ(std::numeric_limits<s32>::min(), closed->first());
+    EXPECT_EQ(std::numeric_limits<s32>::max() - 1, closed->last());
+    EXPECT_TRUE(right.empty());
+}
+
 // RingInterval with custom traits combinations
 
 TEST(RingIntervalTest, less_only_traits)

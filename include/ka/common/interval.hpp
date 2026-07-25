@@ -197,6 +197,21 @@ public:
         return std::nullopt;
     }
 
+    /// @brief Converts the ring interval to a pair of intervals.
+    /// @details
+    /// For discontinuous ring intervals, returns the left and right parts as a pair of non-empty intervals.
+    /// For continuous ring intervals (including empty and full), returns the interval as the first element and
+    /// an empty interval as the second element.
+    [[nodiscard]] constexpr std::pair<Interval<T, Traits>, Interval<T, Traits>> to_intervals() const noexcept
+    {
+        KA_PRE(valid());
+        if (continuous())
+        {
+            return { Interval<T, Traits> { first_, last_ }, Interval<T, Traits> {} };
+        }
+        return { Interval<T, Traits> { Utils::min(), last_ }, Interval<T, Traits> { first_, Utils::min() } };
+    }
+
     /// @brief Returns the complement of this interval.
     [[nodiscard]] constexpr RingInterval complement() const noexcept
     {
