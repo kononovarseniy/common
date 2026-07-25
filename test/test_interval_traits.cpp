@@ -457,4 +457,144 @@ TEST(IntervalValueUtilsTest, min_max_default_integral)
     EXPECT_TRUE(Utils::less(Utils::min(), Utils::max()));
 }
 
+// IntervalValueUtils::is_min
+
+TEST(IntervalValueUtilsTest, is_min_less_only)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, LessOnly>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_min(min_val));
+    EXPECT_FALSE(Utils::is_min(mid));
+    EXPECT_FALSE(Utils::is_min(max_val));
+}
+
+TEST(IntervalValueUtilsTest, is_min_cmp_only)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, CmpOnly>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_min(min_val));
+    EXPECT_FALSE(Utils::is_min(mid));
+    EXPECT_FALSE(Utils::is_min(max_val));
+}
+
+TEST(IntervalValueUtilsTest, is_min_equal_only)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, LessEqual>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_min(min_val));
+    EXPECT_FALSE(Utils::is_min(mid));
+    EXPECT_FALSE(Utils::is_min(max_val));
+}
+
+TEST(IntervalValueUtilsTest, is_min_cmp_equal)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, CmpEqual>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_min(min_val));
+    EXPECT_FALSE(Utils::is_min(mid));
+    EXPECT_FALSE(Utils::is_min(max_val));
+}
+
+TEST(IntervalValueUtilsTest, is_min_all_traits)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, AllTraits>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_min(min_val));
+    EXPECT_FALSE(Utils::is_min(mid));
+    EXPECT_FALSE(Utils::is_min(max_val));
+}
+
+TEST(IntervalValueUtilsTest, is_min_default_integral)
+{
+    using Utils = IntervalValueUtils<s32, IntervalValueTraits<s32>>;
+    EXPECT_TRUE(Utils::is_min(std::numeric_limits<s32>::min()));
+    EXPECT_FALSE(Utils::is_min(0));
+    EXPECT_FALSE(Utils::is_min(std::numeric_limits<s32>::max()));
+}
+
+// IntervalValueUtils::is_max
+
+TEST(IntervalValueUtilsTest, is_max_less_only)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, LessOnly>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_max(max_val));
+    EXPECT_FALSE(Utils::is_max(mid));
+    EXPECT_FALSE(Utils::is_max(min_val));
+}
+
+TEST(IntervalValueUtilsTest, is_max_cmp_only)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, CmpOnly>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_max(max_val));
+    EXPECT_FALSE(Utils::is_max(mid));
+    EXPECT_FALSE(Utils::is_max(min_val));
+}
+
+TEST(IntervalValueUtilsTest, is_max_equal_only)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, LessEqual>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_max(max_val));
+    EXPECT_FALSE(Utils::is_max(mid));
+    EXPECT_FALSE(Utils::is_max(min_val));
+}
+
+TEST(IntervalValueUtilsTest, is_max_cmp_equal)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, CmpEqual>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_max(max_val));
+    EXPECT_FALSE(Utils::is_max(mid));
+    EXPECT_FALSE(Utils::is_max(min_val));
+}
+
+TEST(IntervalValueUtilsTest, is_max_all_traits)
+{
+    using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, AllTraits>;
+    const NoBuiltinOperatorsInt min_val = Utils::min();
+    const NoBuiltinOperatorsInt mid { 0 };
+    const NoBuiltinOperatorsInt max_val = Utils::max();
+
+    EXPECT_TRUE(Utils::is_max(max_val));
+    EXPECT_FALSE(Utils::is_max(mid));
+    EXPECT_FALSE(Utils::is_max(min_val));
+}
+
+TEST(IntervalValueUtilsTest, is_max_default_integral)
+{
+    using Utils = IntervalValueUtils<s32, IntervalValueTraits<s32>>;
+    EXPECT_TRUE(Utils::is_max(std::numeric_limits<s32>::max()));
+    EXPECT_FALSE(Utils::is_max(0));
+    EXPECT_FALSE(Utils::is_max(std::numeric_limits<s32>::min()));
+}
+
 } // namespace ka

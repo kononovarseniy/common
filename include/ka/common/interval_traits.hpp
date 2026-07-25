@@ -118,6 +118,40 @@ struct IntervalValueUtils final
         return Traits::distance(first, last);
     }
 
+    /// @brief Returns true if the value equals the minimum allowed value.
+    /// @pre min <= value <= max.
+    [[nodiscard]] static constexpr bool is_min(const T & value) noexcept
+    {
+        KA_PRE(value_is_valid(value));
+
+        if constexpr (HasIntervalValueEqual<Traits> || HasIntervalValueCmp<Traits>)
+        {
+            return equal(min(), value);
+        }
+        if constexpr (HasIntervalValueLess<Traits>)
+        {
+            // Incorrect if precondition fails.
+            return !Traits::less(min(), value);
+        }
+    }
+
+    /// @brief Returns true if the value equals the maximum allowed value.
+    /// @pre min <= value <= max.
+    [[nodiscard]] static constexpr bool is_max(const T & value) noexcept
+    {
+        KA_PRE(value_is_valid(value));
+
+        if constexpr (HasIntervalValueEqual<Traits> || HasIntervalValueCmp<Traits>)
+        {
+            return equal(max(), value);
+        }
+        if constexpr (HasIntervalValueLess<Traits>)
+        {
+            // Incorrect if precondition fails.
+            return !Traits::less(value, max());
+        }
+    }
+
     /// @brief Checks if lhs < rhs acording to the Traits.
     [[nodiscard]] static constexpr bool less(const T & lhs, const T & rhs) noexcept
     {
