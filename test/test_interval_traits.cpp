@@ -385,9 +385,9 @@ TEST(IntervalValueUtilsTest, distance_default_integral)
     EXPECT_EQ(size_t { 10u }, Utils::distance(-5, 5));
 }
 
-// IntervalValueUtils::value_is_valid
+// IntervalValueUtils::is_valid
 
-TEST(IntervalValueUtilsTest, value_is_valid)
+TEST(IntervalValueUtilsTest, is_valid)
 {
     using Utils = IntervalValueUtils<NoBuiltinOperatorsInt, LessOnly>;
     const NoBuiltinOperatorsInt min_val = LessOnly::min();
@@ -396,19 +396,19 @@ TEST(IntervalValueUtilsTest, value_is_valid)
     const NoBuiltinOperatorsInt below_min { exact_cast<s16>(std::numeric_limits<s16>::min() + 1) };
     const NoBuiltinOperatorsInt above_max { exact_cast<s16>(std::numeric_limits<s16>::max() - 1) };
 
-    EXPECT_TRUE(Utils::value_is_valid(min_val));
-    EXPECT_TRUE(Utils::value_is_valid(max_val));
-    EXPECT_TRUE(Utils::value_is_valid(mid));
-    EXPECT_TRUE(Utils::value_is_valid(below_min));
-    EXPECT_TRUE(Utils::value_is_valid(above_max));
+    EXPECT_TRUE(Utils::is_valid(min_val));
+    EXPECT_TRUE(Utils::is_valid(max_val));
+    EXPECT_TRUE(Utils::is_valid(mid));
+    EXPECT_TRUE(Utils::is_valid(below_min));
+    EXPECT_TRUE(Utils::is_valid(above_max));
 }
 
 TEST(IntervalValueUtilsTest, value_inside_allowed_range_default_integral)
 {
     using Utils = IntervalValueUtils<s32, IntervalValueTraits<s32>>;
-    EXPECT_TRUE(Utils::value_is_valid(std::numeric_limits<s32>::min()));
-    EXPECT_TRUE(Utils::value_is_valid(std::numeric_limits<s32>::max()));
-    EXPECT_TRUE(Utils::value_is_valid(0));
+    EXPECT_TRUE(Utils::is_valid(std::numeric_limits<s32>::min()));
+    EXPECT_TRUE(Utils::is_valid(std::numeric_limits<s32>::max()));
+    EXPECT_TRUE(Utils::is_valid(0));
 }
 
 // IntervalValueUtils::prev / next

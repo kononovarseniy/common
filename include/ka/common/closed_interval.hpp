@@ -24,8 +24,8 @@ public:
         , last_ { last }
     {
         // More detailed assertions for detailed error reports.
-        KA_PRE(Utils::value_is_valid(first_));
-        KA_PRE(Utils::value_is_valid(last_));
+        KA_PRE(Utils::is_valid(first_));
+        KA_PRE(Utils::is_valid(last_));
         KA_PRE(Utils::less_or_equal(first_, last_));
     }
 
@@ -57,7 +57,7 @@ private:
     /// @brief Should always be true.
     [[nodiscard]] constexpr bool is_valid() const noexcept
     {
-        return Utils::value_is_valid(first_) && Utils::value_is_valid(last_) && Utils::less_or_equal(first_, last_);
+        return Utils::is_valid(first_) && Utils::is_valid(last_) && Utils::less_or_equal(first_, last_);
     }
 
 private:

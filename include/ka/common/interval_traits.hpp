@@ -84,28 +84,32 @@ struct IntervalValueUtils final
     /// @brief Largest value strictly less then the value.
     [[nodiscard]] static constexpr T prev(const T & value) noexcept
     {
-        KA_PRE(less(min(), value));
+        KA_PRE(is_valid(value));
+        KA_PRE(!is_min(value));
         return Traits::prev(value);
     }
 
     /// @brief Largest value strictly less then the value, and max if the value is min.
     [[nodiscard]] static constexpr T prev_wrap(const T & value) noexcept
     {
-        return less(min(), value) ? Traits::prev(value) : max();
+        KA_PRE(is_valid(value));
+        return is_min(value) ? max() : Traits::prev(value);
     }
 
     // TODO: remove?
     /// @brief Smalest value strictly greater then the value.
     [[nodiscard]] static constexpr T next(const T & value) noexcept
     {
-        KA_PRE(less(value, max()));
+        KA_PRE(is_valid(value));
+        KA_PRE(!is_max(value));
         return Traits::next(value);
     }
 
     /// @brief Smalest value strictly greater then the value, and min if the value is max.
     [[nodiscard]] static constexpr T next_wrap(const T & value) noexcept
     {
-        return less(value, max()) ? Traits::next(value) : min();
+        KA_PRE(is_valid(value));
+        return is_max(value) ? min() : Traits::next(value);
     }
 
     /// @brief Returns the number of increments (applications of next) needed to go from first to last.
@@ -122,7 +126,7 @@ struct IntervalValueUtils final
     /// @pre min <= value <= max.
     [[nodiscard]] static constexpr bool is_min(const T & value) noexcept
     {
-        KA_PRE(value_is_valid(value));
+        KA_PRE(is_valid(value));
 
         if constexpr (HasIntervalValueEqual<Traits> || HasIntervalValueCmp<Traits>)
         {
@@ -139,7 +143,7 @@ struct IntervalValueUtils final
     /// @pre min <= value <= max.
     [[nodiscard]] static constexpr bool is_max(const T & value) noexcept
     {
-        KA_PRE(value_is_valid(value));
+        KA_PRE(is_valid(value));
 
         if constexpr (HasIntervalValueEqual<Traits> || HasIntervalValueCmp<Traits>)
         {
@@ -243,7 +247,7 @@ struct IntervalValueUtils final
     }
 
     /// @brief Returns true if the value is inside allowed range of values for given Traits.
-    [[nodiscard]] static constexpr bool value_is_valid(const T & value) noexcept
+    [[nodiscard]] static constexpr bool is_valid(const T & value) noexcept
     {
         return !less(value, min()) && !less(max(), value);
     }

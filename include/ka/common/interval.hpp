@@ -99,27 +99,27 @@ public:
     [[nodiscard]] constexpr bool empty() const noexcept
     {
         KA_PRE(valid());
-        return Utils::equal(first_, last_) && Utils::equal(first_, Utils::max());
+        return Utils::equal(first_, last_) && Utils::is_max(first_);
     }
 
     /// @brief Returns true if the interval contains all possible values.
     [[nodiscard]] constexpr bool full() const noexcept
     {
         KA_PRE(valid());
-        return Utils::equal(first_, last_) && !Utils::equal(first_, Utils::max());
+        return Utils::equal(first_, last_) && !Utils::is_max(first_);
     }
 
     /// @brief Returns true if the interval is a single continuous range (including empty and full).
     [[nodiscard]] constexpr bool continuous() const noexcept
     {
         KA_PRE(valid());
-        return Utils::less_or_equal(first_, last_) || Utils::equal(last_, Utils::min());
+        return Utils::less_or_equal(first_, last_) || Utils::is_min(last_);
     }
 
     [[nodiscard]] constexpr bool contains(const T & value) const noexcept
     {
         KA_PRE(valid());
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
 
         const auto cmp = Utils::cmp(first_, last_);
         if (cmp < 0)
@@ -130,8 +130,7 @@ public:
         {
             return Utils::less(value, last_) || Utils::less_or_equal(first_, value);
         }
-        // When all values are valid this line is equivalent to first_ == min (full range).
-        return !Utils::less(Utils::min(), first_);
+        return Utils::is_min(first_);
     }
 
     [[nodiscard]] constexpr auto size() const noexcept
@@ -144,7 +143,7 @@ public:
         {
             return Utils::distance(first_, last_);
         }
-        else if (cmp == 0 && Utils::equal(first_, Utils::max()))
+        else if (cmp == 0 && Utils::is_max(first_))
         {
             return IntervalValueTraitsSizeType<Traits> {};
         }
@@ -170,7 +169,7 @@ public:
         {
             // Discontinuous: [min, last) U [first, max].
             const auto right = ClosedInterval<T, Traits>(first_, Utils::max());
-            if (Utils::equal(last_, Utils::min()))
+            if (Utils::is_min(last_))
             {
                 // Left part is empty.
                 return MaybeTwoClosedIntervals<T, Traits>(right);
@@ -206,7 +205,7 @@ public:
         {
             return RingInterval { last_, first_ };
         }
-        return Utils::equal(first_, Utils::min())
+        return Utils::is_min(first_)
                    ? RingInterval { Utils::max(), Utils::max() }
                    : RingInterval { Utils::min(), Utils::min() };
     }
@@ -228,8 +227,8 @@ public:
     /// @pre first <= last
     [[nodiscard]] static constexpr RingInterval make_half_open(const T & first, const T & last) noexcept
     {
-        KA_PRE(Utils::value_is_valid(first));
-        KA_PRE(Utils::value_is_valid(last));
+        KA_PRE(Utils::is_valid(first));
+        KA_PRE(Utils::is_valid(last));
         KA_PRE(Utils::less_or_equal(first, last));
         if (Utils::equal(first, last))
         {
@@ -243,8 +242,8 @@ public:
     /// @pre first <= last
     [[nodiscard]] static constexpr RingInterval make_half_open_complement(const T & first, const T & last) noexcept
     {
-        KA_PRE(Utils::value_is_valid(first));
-        KA_PRE(Utils::value_is_valid(last));
+        KA_PRE(Utils::is_valid(first));
+        KA_PRE(Utils::is_valid(last));
         KA_PRE(Utils::less_or_equal(first, last));
         if (Utils::equal(first, last))
         {
@@ -257,8 +256,8 @@ public:
     /// @pre first <= last
     [[nodiscard]] static constexpr RingInterval make_closed(const T & first, const T & last) noexcept
     {
-        KA_PRE(Utils::value_is_valid(first));
-        KA_PRE(Utils::value_is_valid(last));
+        KA_PRE(Utils::is_valid(first));
+        KA_PRE(Utils::is_valid(last));
         KA_PRE(Utils::less_or_equal(first, last));
         return RingInterval(first, Utils::next_wrap(last));
     }
@@ -272,9 +271,9 @@ public:
     /// @brief Returns an interval of all values strictly less than value.
     [[nodiscard]] static constexpr RingInterval make_less(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
 
-        if (Utils::less(Utils::min(), value))
+        if (!Utils::is_min(value))
         {
             return RingInterval(Utils::min(), value);
         }
@@ -284,7 +283,7 @@ public:
     /// @brief Returns an interval of all values less than or equal to value.
     [[nodiscard]] static constexpr RingInterval make_less_or_equal(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
         // If the value is max() we would get a full range represented as first == last == min().
         return RingInterval(Utils::min(), Utils::next_wrap(value));
     }
@@ -292,29 +291,29 @@ public:
     /// @brief Returns an interval containing only value.
     [[nodiscard]] static constexpr RingInterval make_equal(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
         return RingInterval(value, Utils::next_wrap(value));
     }
 
     /// @brief Returns an interval containing all values except given value.
     [[nodiscard]] static constexpr RingInterval make_not_equal(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
         return RingInterval(Utils::next_wrap(value), value);
     }
 
     /// @brief Returns an interval of all values greater than or equal to value.
     [[nodiscard]] static constexpr RingInterval make_greater_or_equal(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
         return RingInterval(value, Utils::min());
     }
 
     /// @brief Returns an interval of all values strictly greater than value.
     [[nodiscard]] static constexpr RingInterval make_greater(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
-        if (Utils::less(value, Utils::max()))
+        KA_PRE(Utils::is_valid(value));
+        if (!Utils::is_max(value))
         {
             return RingInterval(Utils::next(value), Utils::min());
         }
@@ -325,11 +324,11 @@ private:
     /// @brief Should always return true.
     [[nodiscard]] constexpr bool valid() const noexcept
     {
-        if (!Utils::value_is_valid(first_))
+        if (!Utils::is_valid(first_))
         {
             return false;
         }
-        if (!Utils::value_is_valid(last_))
+        if (!Utils::is_valid(last_))
         {
             return false;
         }
@@ -337,7 +336,7 @@ private:
         {
             return true;
         }
-        return Utils::equal(first_, Utils::min()) || Utils::equal(first_, Utils::max());
+        return Utils::is_min(first_) || Utils::is_max(first_);
     }
 
 private:
@@ -395,25 +394,25 @@ public:
     [[nodiscard]] constexpr bool empty() const noexcept
     {
         KA_PRE(valid());
-        return Utils::equal(first_, last_) && Utils::equal(first_, Utils::max());
+        return Utils::equal(first_, last_) && Utils::is_max(first_);
     }
 
     /// @brief Returns true if the interval contains all possible values.
     [[nodiscard]] constexpr bool full() const noexcept
     {
         KA_PRE(valid());
-        return Utils::equal(first_, last_) && !Utils::equal(first_, Utils::max());
+        return Utils::equal(first_, last_) && !Utils::is_max(first_);
     }
 
     [[nodiscard]] constexpr bool contains(const T & value) const noexcept
     {
         KA_PRE(valid());
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
         if (Utils::greater(first_, value))
         {
             return false;
         }
-        return Utils::equal(last_, Utils::min()) || Utils::less(value, last_);
+        return Utils::is_min(last_) || Utils::less(value, last_);
     }
 
     [[nodiscard]] constexpr auto size() const noexcept
@@ -475,8 +474,8 @@ public:
     /// @pre first <= last
     [[nodiscard]] static constexpr Interval make_half_open(const T & first, const T & last) noexcept
     {
-        KA_PRE(Utils::value_is_valid(first));
-        KA_PRE(Utils::value_is_valid(last));
+        KA_PRE(Utils::is_valid(first));
+        KA_PRE(Utils::is_valid(last));
         KA_PRE(Utils::less_or_equal(first, last));
         if (Utils::equal(first, last))
         {
@@ -489,8 +488,8 @@ public:
     /// @pre first <= last
     [[nodiscard]] static constexpr Interval make_closed(const T & first, const T & last) noexcept
     {
-        KA_PRE(Utils::value_is_valid(first));
-        KA_PRE(Utils::value_is_valid(last));
+        KA_PRE(Utils::is_valid(first));
+        KA_PRE(Utils::is_valid(last));
         KA_PRE(Utils::less_or_equal(first, last));
         return Interval(first, Utils::next_wrap(last));
     }
@@ -504,8 +503,8 @@ public:
     /// @brief Returns an interval of all values strictly less than value.
     [[nodiscard]] static constexpr Interval make_less(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
-        if (Utils::less(Utils::min(), value))
+        KA_PRE(Utils::is_valid(value));
+        if (!Utils::is_min(value))
         {
             return Interval(Utils::min(), value);
         }
@@ -515,29 +514,29 @@ public:
     /// @brief Returns an interval of all values less than or equal to value.
     [[nodiscard]] static constexpr Interval make_less_or_equal(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
         return Interval(Utils::min(), Utils::next_wrap(value));
     }
 
     /// @brief Returns an interval containing only value.
     [[nodiscard]] static constexpr Interval make_equal(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
         return Interval(value, Utils::next_wrap(value));
     }
 
     /// @brief Returns an interval of all values greater than or equal to value.
     [[nodiscard]] static constexpr Interval make_greater_or_equal(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
+        KA_PRE(Utils::is_valid(value));
         return Interval(value, Utils::min());
     }
 
     /// @brief Returns an interval of all values strictly greater than value.
     [[nodiscard]] static constexpr Interval make_greater(const T & value) noexcept
     {
-        KA_PRE(Utils::value_is_valid(value));
-        if (Utils::equal(value, Utils::max()))
+        KA_PRE(Utils::is_valid(value));
+        if (Utils::is_max(value))
         {
             return make_empty();
         }
@@ -548,24 +547,24 @@ private:
     /// @brief Should always return true.
     [[nodiscard]] constexpr bool valid() const noexcept
     {
-        if (!Utils::value_is_valid(first_))
+        if (!Utils::is_valid(first_))
         {
             return false;
         }
-        if (!Utils::value_is_valid(last_))
+        if (!Utils::is_valid(last_))
         {
             return false;
         }
         if (!Utils::less_or_equal(first_, last_))
         {
             // Max-inclusive: first > last only allowed when last == min.
-            return Utils::equal(last_, Utils::min());
+            return Utils::is_min(last_);
         }
         if (!Utils::equal(first_, last_))
         {
             return true;
         }
-        return Utils::equal(first_, Utils::min()) || Utils::equal(first_, Utils::max());
+        return Utils::is_min(first_) || Utils::is_max(first_);
     }
 
 private:
