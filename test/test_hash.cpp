@@ -1,9 +1,22 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <bitset>
+#include <deque>
+#include <forward_list>
+#include <list>
+#include <map>
+#include <memory>
+#include <optional>
+#include <set>
 #include <string>
 #include <string_view>
+#include <tuple>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <variant>
+#include <vector>
 
 #include <ka/common/fixed.hpp>
 #include <ka/common/hash.hpp>
@@ -12,6 +25,11 @@ namespace ka
 {
 
 constexpr u64 test_string_hash = 18007334074686647077u;
+
+struct Unhashable final
+{
+    std::string a;
+};
 
 TEST(HashTestSuite, HasherIsConstructible)
 {
@@ -35,16 +53,6 @@ TEST(HashTestSuite, HashBytes)
     Hasher hasher;
     hasher.update(array.data(), array.size());
     EXPECT_EQ(hasher.digest(), test_string_hash);
-}
-
-TEST(HashTestSuite, CStringIsHahable)
-{
-    static_assert(Hashable<const char *>);
-    Hasher hasher;
-    const char * str = "test";
-    hasher.update(str);
-    EXPECT_EQ(hasher.digest(), test_string_hash);
-    EXPECT_EQ(Hash {}(str), test_string_hash);
 }
 
 TEST(HashTestSuite, CStringLiteralIsHahable)
@@ -224,5 +232,235 @@ TEST(HashTestSuite, StringHashSetFunctional)
         EXPECT_TRUE(hash_set.contains(std::string_view { "C\0tested" }));
     }
 }
+
+TEST(HashTestSuite, VectorIsHashable)
+{
+    static_assert(Hashable<std::vector<int>>);
+    static_assert(!Hashable<std::vector<Unhashable>>);
+
+    constexpr u64 expected = 18239313798490686357u;
+    EXPECT_EQ(Hash {}(std::vector<int> { 1, 2, 3 }), expected);
+}
+
+TEST(HashTestSuite, VectorBoolIsHashable)
+{
+    static_assert(Hashable<std::vector<bool>>);
+
+    constexpr u64 expected = 15034027211670106815u;
+    EXPECT_EQ(Hash {}(std::vector<bool> { true, false, true }), expected);
+}
+
+TEST(HashTestSuite, BitsetIsHashable)
+{
+    static_assert(Hashable<std::bitset<8>>);
+
+    constexpr u64 expected = 8846950589617415811u;
+    EXPECT_EQ(Hash {}(std::bitset<8> { 0b10110010u }), expected);
+}
+
+TEST(HashTestSuite, SetIsHashable)
+{
+    static_assert(Hashable<std::set<int>>);
+    static_assert(!Hashable<std::set<Unhashable>>);
+
+    constexpr u64 expected = 18239313798490686357u;
+    EXPECT_EQ(Hash {}(std::set<int> { 1, 2, 3 }), expected);
+}
+
+TEST(HashTestSuite, UnorderedSetIsHashable)
+{
+    static_assert(Hashable<std::unordered_set<int>>);
+    static_assert(!Hashable<std::unordered_set<Unhashable, std::hash<std::string>>>);
+
+    constexpr u64 expected = 12371478820467099029u;
+    EXPECT_EQ(Hash {}(std::unordered_set<int> { 1, 2, 3 }), expected);
+}
+
+TEST(HashTestSuite, MapIsHashable)
+{
+    static_assert(Hashable<std::map<std::string, int>>);
+    static_assert(!Hashable<std::map<Unhashable, int>>);
+    static_assert(!Hashable<std::map<int, Unhashable>>);
+
+    constexpr u64 expected = 13597235531013623295u;
+    EXPECT_EQ(Hash {}(std::map<std::string, int> { { "a", 1 }, { "b", 2 } }), expected);
+}
+
+TEST(HashTestSuite, UnorderedMapIsHashable)
+{
+    static_assert(Hashable<std::unordered_map<std::string, int>>);
+    static_assert(!Hashable<std::unordered_map<Unhashable, int, std::hash<std::string>>>);
+    static_assert(!Hashable<std::unordered_map<int, Unhashable, std::hash<std::string>>>);
+
+    constexpr u64 expected = 3131987233830052019u;
+    EXPECT_EQ(Hash {}(std::unordered_map<std::string, int> { { "a", 1 }, { "b", 2 } }), expected);
+}
+
+TEST(HashTestSuite, DequeIsHashable)
+{
+    static_assert(Hashable<std::deque<int>>);
+    static_assert(!Hashable<std::deque<Unhashable>>);
+
+    constexpr u64 expected = 18239313798490686357u;
+    EXPECT_EQ(Hash {}(std::deque<int> { 1, 2, 3 }), expected);
+}
+
+TEST(HashTestSuite, ListIsHashable)
+{
+    static_assert(Hashable<std::list<int>>);
+    static_assert(!Hashable<std::list<Unhashable>>);
+
+    constexpr u64 expected = 18239313798490686357u;
+    EXPECT_EQ(Hash {}(std::list<int> { 1, 2, 3 }), expected);
+}
+
+TEST(HashTestSuite, ForwardListIsHashable)
+{
+    static_assert(Hashable<std::forward_list<int>>);
+    static_assert(!Hashable<std::forward_list<Unhashable>>);
+
+    constexpr u64 expected = 18239313798490686357u;
+    EXPECT_EQ(Hash {}(std::forward_list<int> { 1, 2, 3 }), expected);
+}
+
+TEST(HashTestSuite, PairIsHashable)
+{
+    static_assert(Hashable<std::pair<std::string, int>>);
+    static_assert(!Hashable<std::pair<Unhashable, int>>);
+    static_assert(!Hashable<std::pair<int, Unhashable>>);
+
+    constexpr u64 expected = 1001063584236537821u;
+    EXPECT_EQ(Hash {}(std::pair<std::string, int> { "a", 1 }), expected);
+}
+
+TEST(HashTestSuite, TupleIsHashable)
+{
+    static_assert(Hashable<std::tuple<std::string, int>>);
+    static_assert(Hashable<std::tuple<>>);
+    static_assert(!Hashable<std::tuple<int, Unhashable>>);
+
+    constexpr u64 expected = 1001063584236537821u;
+    EXPECT_EQ(Hash {}(std::tuple<std::string, int> { "a", 1 }), expected);
+}
+
+TEST(HashTestSuite, OptionalIsHashable)
+{
+    static_assert(Hashable<std::optional<int>>);
+    static_assert(!Hashable<std::optional<Unhashable>>);
+
+    constexpr u64 expected = 1790149455062925670u;
+    constexpr u64 expected_empty = 12638153115695167455u;
+    EXPECT_EQ(Hash {}(std::optional<int> { 42 }), expected);
+    EXPECT_EQ(Hash {}(std::optional<int> {}), expected_empty);
+}
+
+TEST(HashTestSuite, UniquePtrHashesByAddress)
+{
+    static_assert(Hashable<std::unique_ptr<int>>);
+    static_assert(Hashable<std::unique_ptr<Unhashable>>);
+
+    const auto first = std::make_unique<int>(1);
+    const auto second = std::make_unique<int>(1);
+
+    EXPECT_EQ(Hash {}(first), Hash {}(first));
+    EXPECT_NE(Hash {}(first), Hash {}(second));
+    EXPECT_NE(Hash {}(std::unique_ptr<int> {}), Hash {}(first));
+}
+
+TEST(HashTestSuite, SharedPtrHashesByAddress)
+{
+    static_assert(Hashable<std::shared_ptr<int>>);
+    static_assert(Hashable<std::shared_ptr<Unhashable>>);
+
+    const auto first = std::make_shared<int>(1);
+    const auto second = std::make_shared<int>(1);
+
+    EXPECT_EQ(Hash {}(first), Hash {}(first));
+    EXPECT_NE(Hash {}(first), Hash {}(second));
+    EXPECT_NE(Hash {}(std::shared_ptr<int> {}), Hash {}(first));
+}
+
+TEST(HashTestSuite, RawPointerHashesByAddress)
+{
+    static_assert(Hashable<int *>);
+    static_assert(Hashable<const int *>);
+    static_assert(Hashable<const char *>);
+    static_assert(Hashable<void *>);
+    static_assert(Hashable<Unhashable *>);
+
+    int first = 1;
+    int second = 1;
+    const char * str = "test";
+
+    EXPECT_EQ(Hash {}(&first), Hash {}(&first));
+    EXPECT_NE(Hash {}(&first), Hash {}(&second));
+    EXPECT_NE(Hash {}(static_cast<int *>(nullptr)), Hash {}(&first));
+    EXPECT_NE(Hash {}(str), test_string_hash);
+}
+
+TEST(HashTestSuite, VariantIsHashable)
+{
+    static_assert(Hashable<std::variant<std::string, int>>);
+    static_assert(!Hashable<std::variant<int, Unhashable>>);
+
+    constexpr u64 expected = 11500333634479716206u;
+    EXPECT_EQ(Hash {}(std::variant<std::string, int> { 42 }), expected);
+}
+
+TEST(HashTestSuite, VariantWithMonostateIsHashable)
+{
+    static_assert(Hashable<std::variant<std::monostate, int>>);
+
+    constexpr u64 expected = 12161962213042174405u;
+    EXPECT_EQ(Hash {}(std::variant<std::monostate, int> { std::monostate {} }), expected);
+}
+
+TEST(HashTestSuite, MonostateIsHashable)
+{
+    static_assert(Hashable<std::monostate>);
+
+    constexpr u64 expected = 14695981039346656037u;
+    EXPECT_EQ(Hash {}(std::monostate {}), expected);
+}
+
+#if defined(__cpp_lib_flat_set)
+static_assert(__cpp_lib_flat_set >= 202207L);
+
+TEST(HashTestSuite, FlatSetIsHashable)
+{
+    static_assert(Hashable<std::flat_set<int>>);
+    static_assert(!Hashable<std::flat_set<Unhashable>>);
+
+    constexpr u64 expected = 18239313798490686357u;
+    EXPECT_EQ(Hash {}(std::flat_set<int> { 1, 2, 3 }), expected);
+}
+#endif
+
+#if defined(__cpp_lib_flat_map)
+static_assert(__cpp_lib_flat_map >= 202207L);
+
+TEST(HashTestSuite, FlatMapIsHashable)
+{
+    static_assert(Hashable<std::flat_map<std::string, int>>);
+    static_assert(!Hashable<std::flat_map<Unhashable, int>>);
+    static_assert(!Hashable<std::flat_map<int, Unhashable>>);
+
+    constexpr u64 expected = 13597235531013623295u;
+    EXPECT_EQ(Hash {}(std::flat_map<std::string, int> { { "a", 1 }, { "b", 2 } }), expected);
+}
+#endif
+
+#if defined(__cpp_lib_indirect)
+static_assert(__cpp_lib_indirect >= 202502L);
+
+TEST(HashTestSuite, IndirectIsHashable)
+{
+    static_assert(Hashable<std::indirect<int>>);
+    static_assert(!Hashable<std::indirect<Unhashable>>);
+
+    constexpr u64 expected = 1790149455062925670u;
+    EXPECT_EQ(Hash {}(std::indirect<int> { 42 }), expected);
+}
+#endif
 
 } // namespace ka
