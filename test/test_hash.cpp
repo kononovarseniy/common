@@ -123,6 +123,32 @@ TEST(HashTestSuite, ArithmeticTypesAreHashable)
     EXPECT_EQ(Hash {}(value), test_string_hash);
 }
 
+TEST(HashTestSuite, ConstAndReferenceTypesAreHashable)
+{
+    struct Foo
+    {
+        void hash(Hasher & hasher) const
+        {
+            hasher.update(1);
+        }
+    };
+
+    static_assert(Hashable<Foo>);
+    static_assert(Hashable<std::reference_wrapper<Foo>>);
+    static_assert(Hashable<const Foo>);
+    static_assert(Hashable<const Foo &>);
+    static_assert(Hashable<const Foo &&>);
+    static_assert(Hashable<Foo &>);
+    static_assert(Hashable<Foo &&>);
+
+    constexpr Hash do_hash {};
+    Foo foo;
+    const auto baseline = do_hash(foo);
+    EXPECT_EQ(baseline, do_hash(std::ref(foo)));
+    EXPECT_EQ(baseline, do_hash(std::cref(foo)));
+    EXPECT_EQ(baseline, do_hash(std::move(foo)));
+}
+
 TEST(HashTestSuite, StrHashWorks)
 {
     StrHash hash;

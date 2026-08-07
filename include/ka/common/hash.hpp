@@ -16,7 +16,9 @@ template <typename T>
 struct HashImpl;
 
 template <typename T>
-concept Hashable = requires(Hasher & hasher, const T & value) { HashImpl<T>::update(hasher, value); };
+concept Hashable = requires(Hasher & hasher, const T & value) {
+    HashImpl<T>::update(hasher, value);
+};
 //! Types which declare method hash(Hasher &) are hashable.
 template <typename T>
 concept HashableByMethod = requires(Hasher & hasher, const T & value) { value.hash(hasher); };
@@ -80,6 +82,15 @@ struct HashImpl<T> final
     static void update(Hasher & hasher, const T & value) noexcept
     {
         hasher.update(reinterpret_cast<const u8 *>(&value), sizeof(T));
+    }
+};
+
+template <Hashable T>
+struct HashImpl<std::reference_wrapper<T>> final
+{
+    static void update(Hasher & hasher, const std::reference_wrapper<T> value) noexcept
+    {
+        hasher.update(value.get());
     }
 };
 
