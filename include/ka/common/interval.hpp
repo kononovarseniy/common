@@ -494,19 +494,27 @@ public:
     {
         KA_PRE(valid());
         KA_PRE(other.valid());
-        const auto this_ci = to_closed_interval();
-        const auto other_ci = other.to_closed_interval();
-        if (!this_ci.has_value() || !other_ci.has_value())
+
+        if (empty() || other.empty())
         {
             return make_empty();
         }
-        const T start = Utils::greater_or_equal(this_ci->first(), other_ci->first()) ? this_ci->first() : other_ci->first();
-        const T end = Utils::less_or_equal(this_ci->last(), other_ci->last()) ? this_ci->last() : other_ci->last();
-        if (Utils::greater(start, end))
+
+        const T start = Utils::greater(first_, other.first_) ? first_ : other.first_;
+
+        // The exclusive end: min() as last_ means max-inclusive (treated as "largest end").
+        const T end =
+            Utils::is_min(last_)         ? other.last_
+            : Utils::is_min(other.last_) ? last_
+            : Utils::less(last_, other.last_)
+                ? last_
+                : other.last_;
+
+        if (!Utils::is_min(end) && Utils::greater_or_equal(start, end))
         {
             return make_empty();
         }
-        return make_closed(start, end);
+        return Interval(start, end);
     }
 
     /// @brief Returns an empty interval.
